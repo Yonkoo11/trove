@@ -77,12 +77,13 @@ function stubPanel() {
       ['Fee (value balance)', `${fmt(d.valueBalanceZat)} zat`],
       ['Transparent in', String(d.transparent_in_out?.[0] ?? 0)],
       ['Transparent out', String(d.transparent_in_out?.[1] ?? 0)],
-      ['Ironwood actions', String(d.ironwood_actions)],
+      ['Shielded actions', String(d.ironwood_actions)],
     ];
     const dl = h('dl');
     for (const [k, v] of rows) dl.append(h('div', { class: 'row' }, h('dt', {}, k), h('span', { class: 'lead-dots' }), h('dd', {}, v)));
-    box.append(dl, h('p', { class: 'label' }, 'Public fields on each action'),
-      h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f))),
+    box.append(dl, h('p', { class: 'note' }, 'Everything else about the transaction is sealed: who sent it, who received it and how much.'),
+      h('details', {}, h('summary', {}, 'Raw fields a viewer can read on each action'),
+        h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f)))),
       h('p', { class: 'note' }, `Checked on one transaction: ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. This is a release from the vault (lender and keeper signed), not the deposit; no deposit transaction is shown. Amounts and addresses are not among these fields. The stablecoin leg is on another chain and is public.`));
   };
   gateListeners.add(draw); draw();
@@ -233,7 +234,9 @@ function lendScreen() {
     h('div', { class: 'cols' },
       h('form', { class: 'panel', onsubmit: (e) => e.preventDefault() },
         h('label', { class: 'field', for: 'fund' }, h('span', {}, 'You fund'), h('div', { class: 'input' }, amt, h('span', { class: 'unit' }, 'USD'))),
-        err, out),
+        err, out, h('h3', { style: 'margin-top:16px' }, 'What happens next'),
+        h('ol', {}, h('li', {}, 'A borrower sends you their terms from the Borrow screen.'), h('li', {}, 'You check them and pay the dollars on the other chain.'), h('li', {}, 'You hold your key until the loan closes.')),
+        h('p', { class: 'small' }, 'Regtest build: there is no inbox yet, so terms are passed by hand.')),
       h('div', { class: 'panel' }, h('h3', {}, 'What you can sign'),
         h('ul', {}, h('li', {}, 'Alone: nothing. A release needs two keys.'),
           h('li', {}, 'With the borrower: a repayment release.'),
