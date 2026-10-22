@@ -63,9 +63,12 @@ h3 { font-size: 16px; line-height: 24px; }
   margin: 0 auto;
   padding: 16px;
 }
-.brand { white-space: nowrap; font-weight: 500; font-size: 16px; text-decoration: none; }
+.brand { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; white-space: nowrap; font-weight: 500; font-size: 16px; text-decoration: none; }
 .nav nav { display: flex; gap: 4px; }
 .nav nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 14px;
   line-height: 20px;
   padding: 8px 12px;
@@ -188,6 +191,7 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20
 th { text-align: left; font-weight: 400; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
 td { padding: 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 tr:last-child td { border-bottom: 0; }
+td a { display: inline-flex; align-items: center; min-height: 44px; }
 td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 4px; }
 .tag { display: inline-block; padding: 2px 8px; border-radius: var(--r-control); border: 1px solid var(--rule); font-size: 12px; line-height: 16px; }
 .tag.good { color: var(--green); border-color: var(--green); }
