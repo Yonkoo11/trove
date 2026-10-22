@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "spike/ is gitignored scratch space holding throwaway regtest keys; it is never published"
+paths = ["^spike/"]
