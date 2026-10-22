@@ -20,7 +20,10 @@ const terms = { collateralZat: 100_000_000n, principal: 40_000_000n, aprBps: 100
 terms.principal = 40_000_000n;
 
 const doRelease = (eff, wallet, zat) => {
-  const out = sh('release.sh', eff.signers.join(','), wallet, String(zat));
+  // the local FROST/proving tools occasionally stall on a first try; a failed release sent nothing, so one retry is safe
+  let out;
+  try { out = sh('release.sh', eff.signers.join(','), wallet, String(zat)); }
+  catch { console.log('release failed once, retrying'); out = sh('release.sh', eff.signers.join(','), wallet, String(zat)); }
   return out.trim().split('\n').pop();
 };
 const scenario = process.argv[2];
