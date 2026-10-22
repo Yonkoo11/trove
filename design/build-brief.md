@@ -15,7 +15,7 @@ Product name is one constant, NAME in site/app.js, value "Shielded Lend". The ow
 ## Tokens
 
 - Ground #F4F5F7, paper #FFFFFF, ink #12151A, muted #5E6670, accent #F4B728 (primary button only, ink text on it), rule #D9DCE1. Text colours in use: ink, muted, red #B42318 and green #067647 for loan state only, always with a word beside them.
-- Type sizes 12, 14, 16, 24, 40px. Body 14px/20px weight 400. Inputs 16px. Headline h1 24px/32px weight 500. The result number 40px/48px weight 500. Stub text 12px/16px. Nothing else.
+- Type sizes 12, 14, 16, 24, 40px. Body and cost sentences 16px/24px weight 400. Labels, nav, table text 14px/20px. Inputs 16px. Headline h1 24px/32px weight 500. The result number 40px/48px weight 500. Stub text 12px/16px. Nothing else.
 - One family: Geist variable, WOFF2 inside site/fonts/, `font-display: swap`, system-ui fallback. tabular-nums on every number.
 - Radius 6px controls, 12px panels, 2px stub. Spacing step 4px (halves of 2px allowed), gaps 8, 16, 24, 48px.
 - Curve cubic-bezier(0.22,1,0.36,1). Interaction 200ms. Entrance 400ms once on the ticket (opacity 0 to 1, 4px rise). Loops: none. Numbers update without animation.
@@ -40,11 +40,11 @@ Amounts verbatim: repay borrower +99,990,000 zat; default lender +93,328,625 and
 
 - Plain HTML, CSS and ES modules instead of the skill default Svelte + Vite: src/money.mjs and src/defaults.mjs run unchanged in the browser through site/lib/ copies, a test checks the copies are byte-identical to src/, and the published folder stays small with no build step.
 - Geist is served from site/fonts/, not a CDN, so there is no third-party request.
-- Live price is best effort; the stored close is the labelled fallback.
+- One third-party request: a CoinGecko price read from the browser, best effort, ignored if outside 0.1x to 10x the stored close; the stored close is the labelled fallback.
 
 ## Output contract
 
-Files: site/index.html, site/app.css, site/app.js, site/lib/*.mjs, site/fonts/*.woff2, site/gate1-viewer-fields.json. No framework, no build step, no analytics, no third-party URLs, no screenshots. Do not add a section, testimonial, logo strip or metric that is not in the repo.
+Files: site/index.html, site/app.css, site/app.js, site/lib/*.mjs, site/fonts/*.woff2, site/gate1-viewer-fields.json. No framework, no build step, no analytics, no screenshots, no third-party URL except the one CoinGecko price read named in Deviations. Do not add a section, testimonial, logo strip or metric that is not in the repo.
 
 ## Setup
 
@@ -65,7 +65,7 @@ Files: site/index.html, site/app.css, site/app.js, site/lib/*.mjs, site/fonts/*.
 - [ ] bash ~/System/scripts/brief-check.sh design/build-brief.md prints decides.
 - [ ] bash ~/.claude/skills/design/scripts/design-check.sh . http://localhost:5173 exits 0.
 - [ ] Primary button fully inside the first viewport at 1440x900, 390x844 and 1280x720.
-- [ ] Main reading text at least 14px at 1440 and 390, 16px at 1280x720; inputs 16px.
+- [ ] Main reading text 16px; inputs 16px; smallest text 12px.
 - [ ] node --test test/ passes, including the site/lib copies matching src/.
 - [ ] grep -ci anonymous site/index.html site/app.js prints 0.
 - [ ] Not one word of copy, one colour or one URL differs from this brief.

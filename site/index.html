@@ -4,165 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Shielded Lend</title>
-<meta name="description" content="Fixed-term dollar loans against ZEC, with the collateral in a shielded vault that needs two of three signers. Regtest only.">
-<style>
-:root{
-  --ground:#F3F4F1; --paper:#FFFFFF; --ink:#15171A; --muted:#5B6168; --accent:#0B6B52;
-  --rule:#D9DCD6;
-  --r-receipt:2px; --r-button:6px; --r-panel:12px;
-  --s:4px;
-  --ease:cubic-bezier(0.22,1,0.36,1); --t:200ms; --enter:600ms;
-  --sans:system-ui,sans-serif; --mono:ui-monospace,monospace;
-}
-*{box-sizing:border-box;margin:0}
-html{background:var(--ground);color:var(--ink);font:400 16px/24px var(--sans);-webkit-text-size-adjust:100%}
-body{min-width:0;overflow-x:hidden;background:var(--ground)}
-a{color:var(--accent);text-underline-offset:4px;transition:color var(--t) var(--ease)}
-@media (hover:hover){a:hover{color:var(--ink)}}
-a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
-.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
-header{padding:24px 0;display:flex;justify-content:space-between;align-items:baseline;gap:16px}
-header b{font-weight:450;font-size:20px;line-height:24px}
-header span{color:var(--muted)}
-.hero{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:48px;padding:16px 0 64px;align-items:start}
-h1{font-weight:450;font-size:32px;line-height:40px}
-h2{font-weight:450;font-size:32px;line-height:40px;margin-bottom:24px}
-h3{font-weight:450;font-size:20px;line-height:24px}
-.lede{margin-top:16px;color:var(--muted)}
-.actions{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:24px}
-.btn{display:inline-block;background:var(--accent);color:var(--paper);text-decoration:none;padding:12px 24px;border-radius:var(--r-button);font-weight:450;transition:background var(--t) var(--ease)}
-.btn{transition:background var(--t) var(--ease),transform var(--t) var(--ease)}
-@media (hover:hover){.btn:hover{background:var(--ink);color:var(--paper);transform:translateY(-1px)}}
-.parties{margin-top:40px;display:grid;gap:16px}
-.party{border-top:1px solid var(--rule);padding-top:12px}
-.party p{color:var(--muted)}
-.receipt{background:var(--paper);border-radius:var(--r-receipt);padding:24px;font-family:var(--mono);font-size:14px;line-height:24px;box-shadow:inset 0 1px 0 var(--paper),0 8px 24px rgba(21,23,26,.10);transform:rotate(-1deg);position:relative}
-.receipt h3,.receipt .head{font-family:var(--sans)}
-.receipt .head{display:flex;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px dashed var(--muted)}
-.row{display:flex;gap:8px;align-items:baseline;padding:4px 0}
-.row .k{flex:none}
-.row .d{flex:1;min-width:8px;border-bottom:1px dotted var(--muted);transform:translateY(-4px)}
-.row .v{text-align:right;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;min-width:0}
-.hex{overflow-wrap:anywhere;word-break:break-all;font-size:14px}
-.total{border-top:1px dashed var(--muted);margin-top:12px;padding-top:12px}
-.total .big{font:450 clamp(32px,6vw,56px)/1.1 var(--sans);font-variant-numeric:tabular-nums}
-.total .cap{color:var(--muted);font-family:var(--sans)}
-.fields{margin-top:12px;color:var(--muted)}
-.fields code{color:var(--ink)}
-section{padding:64px 0;border-top:1px solid var(--rule)}
-.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
-.grid3 .receipt{transform:none}
-.sub{color:var(--muted);font-family:var(--sans);margin-bottom:12px}
-ul.plain{list-style:none;padding:0;display:grid;gap:16px;max-width:760px}
-ul.plain li{padding-left:16px;border-left:2px solid var(--accent)}
-ul.plain b{font-weight:450}
-pre{font:14px/24px var(--mono);overflow-x:auto;background:var(--paper);padding:16px;border-radius:var(--r-receipt)}
-footer{padding:48px 0;color:var(--muted);border-top:1px solid var(--rule)}
-.print .row,.print .head,.print .total{opacity:0;animation:print var(--enter) var(--ease) forwards}
-.print .head{animation-delay:0ms}
-.print .row:nth-of-type(1){animation-delay:60ms}.print .row:nth-of-type(2){animation-delay:120ms}.print .row:nth-of-type(3){animation-delay:180ms}.print .row:nth-of-type(4){animation-delay:240ms}.print .row:nth-of-type(5){animation-delay:300ms}.print .row:nth-of-type(6){animation-delay:360ms}.print .total{animation-delay:420ms}
-@keyframes print{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-@media (max-width:900px){.hero{grid-template-columns:minmax(0,1fr);gap:32px}.grid3{grid-template-columns:minmax(0,1fr)}.receipt{transform:none}}
-@media (prefers-reduced-motion:reduce){.print .row,.print .head,.print .total{opacity:1;animation:none}*{transition-duration:1ms!important}}
-</style>
+<meta name="description" content="Borrow dollars against ZEC held in a shielded vault. Regtest build, no real funds.">
+<link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div class="wrap">
-<header><b>Shielded Lend</b><span>Regtest build, 22 Oct 2026. Not on a public network.</span></header>
-
-<main>
-<div class="hero">
-  <div>
-    <h1>ZEC collateral goes into a shielded vault, and a public viewer of the lock transaction sees the fee and encrypted fields.</h1>
-    <p class="lede">A fixed-term dollar loan against ZEC. The vault key is split three ways: borrower, lender, keeper. Any two can spend, and the loan rules decide which two.</p>
-    <div class="actions"><a class="btn" href="#verify">Verify it yourself</a><a href="#limits">Read the limits</a></div>
-    <div class="parties">
-      <div class="party"><h3>Borrower</h3><p>Holds one key. Repays with the lender, or cancels with the keeper before the loan is paid.</p></div>
-      <div class="party"><h3>Lender</h3><p>Holds one key. Takes the repayment with the borrower, or the collateral with the keeper on default.</p></div>
-      <div class="party"><h3>Keeper</h3><p>Holds one key. Signs a price reading, and joins the lender on default or the borrower on cancel.</p></div>
-      <div class="party"><h3>Public viewer</h3><p>Reads the receipt on this page and nothing else about the vault.</p></div>
-    </div>
-  </div>
-
-  <article class="receipt print" aria-label="Lock transaction as a public viewer reads it">
-    <div class="head"><b>Lock transaction, public view</b><span>regtest</span></div>
-    <div class="row"><span class="k">height</span><span class="d"></span><span class="v">117</span></div>
-    <div class="row"><span class="k">version</span><span class="d"></span><span class="v">6</span></div>
-    <div class="row"><span class="k">transparent in / out</span><span class="d"></span><span class="v">0 / 0</span></div>
-    <div class="row"><span class="k">Ironwood actions</span><span class="d"></span><span class="v">2</span></div>
-    <div class="row"><span class="k">valueBalanceZat</span><span class="d"></span><span class="v">10000</span></div>
-    <div class="row" style="display:block"><span class="k">txid</span><div class="hex">04e045ba15a6ad5fab96467e976eb7636ebcead750095d70309a0d407f9bc169</div></div>
-    <p class="fields">Each action publishes eight fields: <code>cmx</code> <code>cv</code> <code>encCiphertext</code> <code>ephemeralKey</code> <code>nullifier</code> <code>outCiphertext</code> <code>rk</code> <code>spendAuthSig</code>. The ciphertexts are encrypted; no amount or address appears in clear.</p>
-    <div class="total"><div class="big">10000 zat</div><div class="cap">the only value on the page the chain states, the fee. <a href="gate1-viewer-fields.json">Raw file</a></div></div>
-  </article>
-</div>
-
-<section id="endings">
-  <h2>Three loan endings, run on regtest</h2>
-  <div class="grid3">
-    <article class="receipt"><div class="head"><b>Repaid</b><span>closed_repaid</span></div>
-      <div class="row"><span class="k">signed by</span><span class="d"></span><span class="v">borrower + lender</span></div>
-      <div class="row"><span class="k">to borrower</span><span class="d"></span><span class="v">99,990,000 zat</span></div>
-      <div class="row"><span class="k">to lender</span><span class="d"></span><span class="v">0</span></div></article>
-    <article class="receipt"><div class="head"><b>Defaulted</b><span>closed_defaulted</span></div>
-      <div class="row"><span class="k">signed by</span><span class="d"></span><span class="v">lender + keeper</span></div>
-      <div class="row"><span class="k">to lender</span><span class="d"></span><span class="v">93,328,625 zat</span></div>
-      <div class="row"><span class="k">to borrower</span><span class="d"></span><span class="v">6,641,375 zat</span></div></article>
-    <article class="receipt"><div class="head"><b>Cancelled</b><span>closed_aborted</span></div>
-      <div class="row"><span class="k">signed by</span><span class="d"></span><span class="v">borrower + keeper</span></div>
-      <div class="row"><span class="k">to borrower</span><span class="d"></span><span class="v">99,990,000 zat</span></div>
-      <div class="row"><span class="k">to lender</span><span class="d"></span><span class="v">0</span></div></article>
-  </div>
-</section>
-
-<section id="public">
-  <h2>What stays public</h2>
-  <article class="receipt" style="transform:none;max-width:760px">
-    <div class="head"><b>Visible to anyone</b><span>by design</span></div>
-    <div class="row"><span class="k">stablecoin leg</span><span class="d"></span><span class="v">visible on its chain</span></div>
-    <div class="row"><span class="k">keeper price reading</span><span class="d"></span><span class="v">signed log</span></div>
-    <div class="row"><span class="k">fee on each Zcash spend</span><span class="d"></span><span class="v">10000 zat</span></div>
-    <div class="row"><span class="k">that a vault spend happened</span><span class="d"></span><span class="v">yes</span></div>
-  </article>
-</section>
-
-<section id="backtest">
-  <h2>Back-test over 365 daily closes</h2>
-  <article class="receipt" style="transform:none;max-width:760px">
-    <div class="head"><b>30-day loans, open 40%, liquidate 70%</b><span>CoinGecko daily</span></div>
-    <div class="row"><span class="k">loans simulated</span><span class="d"></span><span class="v">336</span></div>
-    <div class="row"><span class="k">liquidated</span><span class="d"></span><span class="v">11%</span></div>
-    <div class="row"><span class="k">bad debt</span><span class="d"></span><span class="v">0</span></div>
-    <p class="fields">Daily closes miss moves inside a day. Opening at 75% would have been wiped out by a repeat of the worst day (-26%).</p>
-  </article>
-</section>
-
-<section id="limits">
-  <h2>What this does not hide or stop</h2>
-  <ul class="plain">
-    <li><b>The stablecoin leg is public.</b> Principal and repayment cross chains and are visible there.</li>
-    <li><b>Policy is software, not chain law.</b> Any two of the three keys can spend. Keeper and lender together can take the collateral. The loan rules in this repo decide who signs each payout; Zcash does not.</li>
-    <li><b>The price is the keeper's reading.</b> It is signed, not verified on-chain. One live source was checked; two others are tested only on sample replies.</li>
-    <li><b>The FROST crates are unaudited,</b> the demo tool is marked not for production, and the orchard fork with FROST support is unmerged upstream.</li>
-    <li><b>Time comes from the driver.</b> The rules trust the event time they are given.</li>
-    <li><b>Still open:</b> a lender can hold back a newer price and submit an older one that is still fresh, bounded by the price age limit. A lender who pays more than the principal is not refunded the extra. One vault wallet serves every loan on regtest. Late, short and over-locked deposits are now refunded in the rules; that is unit-tested, not re-run on chain.</li>
-    <li><b>Regtest only.</b> Nothing here ran on a public Zcash network.</li>
-  </ul>
-</section>
-
-<section id="verify">
-  <h2>Verify it yourself</h2>
-<pre>npm test
-# expected: 42 pass, 0 fail
-
-node scripts/backtest.mjs
-# expected: 336 loans, 11% liquidated, 0 bad debt at 40/70
-
-node scripts/lifecycle.mjs A   # needs the regtest chain, see README
-# expected: closed_repaid, borrower 99990000</pre>
-</section>
+<div class="banner" role="note">Regtest, no real funds.</div>
+<header class="nav">
+  <a class="brand" href="#/borrow" id="brand">Shielded Lend</a>
+  <nav aria-label="Main">
+    <a href="#/borrow" data-route="borrow">Borrow</a>
+    <a href="#/loans" data-route="loans">Loans</a>
+    <a href="#/lend" data-route="lend">Lend</a>
+    <a href="#/limits" data-route="limits">Limits</a>
+  </nav>
+</header>
+<main id="app" tabindex="-1">
+  <noscript><p class="wrap">This page needs JavaScript to compute loan quotes. The raw field list is in <a href="gate1-viewer-fields.json">gate1-viewer-fields.json</a>.</p></noscript>
 </main>
-<footer>MIT licensed. Built in the Zecathon window for the Private Markets track.</footer>
-</div>
+<footer class="foot">
+  <div class="wrap">
+    <p class="label">Verify it yourself</p>
+    <pre class="cmds"><code>npm test
+node scripts/backtest.mjs
+node scripts/lifecycle.mjs A</code></pre>
+    <p class="small">The third command needs the local regtest stack described in the README. MIT licensed.</p>
+  </div>
+</footer>
+<script type="module" src="app.js"></script>
 </body>
 </html>
