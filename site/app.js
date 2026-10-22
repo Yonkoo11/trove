@@ -189,16 +189,16 @@ function loansScreen() {
   const body = h('tbody');
   for (const r of Object.values(RUNS)) {
     body.append(h('tr', {},
-      h('td', { 'data-label': 'Run' }, h('a', { href: `#/loan/${r.id}` }, `${r.id}: ${r.name}`), h('span', { class: 'stubline' }, stubNote)),
+      h('td', { 'data-label': 'Run' }, h('a', { href: `#/loan/${r.id}` }, `${r.id}: ${r.name}`)),
       h('td', { 'data-label': 'State' }, h('span', { class: `tag ${r.good ? 'good' : 'bad'}` }, r.tag)),
       h('td', { 'data-label': 'Signers' }, r.signers),
-      h('td', { 'data-label': 'Paid out' }, zatLine(r.paid)),
-      h('td', { 'data-label': 'Where' }, 'Regtest run')));
+      h('td', { 'data-label': 'Paid out' }, zatLine(r.paid))));
   }
   return h('section', { class: 'screen' }, h('h1', {}, 'Loans'),
     h('p', { class: 'lead' }, 'Three runs on a local test chain. No real funds moved.'),
     h('div', { class: 'panel' }, h('table', {},
-      h('thead', {}, h('tr', {}, ['Run', 'State', 'Signers', 'Paid out', 'Where'].map((c) => h('th', {}, c)))), body)));
+      h('thead', {}, h('tr', {}, ['Run', 'State', 'Signers', 'Paid out'].map((c) => h('th', {}, c)))), body)),
+    h('p', { class: 'small say' }, stubNote));
 }
 
 function loanScreen(id) {
@@ -262,9 +262,7 @@ function limitsScreen() {
       h('div', { class: 'panel' }, h('ul', {}, items.map((t) => h('li', {}, t)))),
       h('div', { class: 'stack' },
         h('div', { class: 'panel' }, h('h3', {}, 'Back-test'),
-          h('p', {}, '336 thirty-day loans, 11% liquidated, 0 bad debt at the 40% opening and 70% liquidation limits.')),
-        h('div', { class: 'panel' }, h('h3', {}, 'Verify it yourself'),
-          h('pre', { class: 'cmds' }, 'npm test\nnode scripts/backtest.mjs\nnode scripts/lifecycle.mjs A')))));
+          h('p', {}, '336 thirty-day loans, 11% liquidated, 0 bad debt at the 40% opening and 70% liquidation limits.')))));
 }
 
 // ---- router

@@ -47,4 +47,4 @@ Option 3: Lock ZEC, get dollars, repay later, and see exactly what the chain sho
 Picked: 1
 Picked by: model
 Headline: picked by model, needs owner
-Brief hash: 25fe8df078f7e90c
+Brief hash: 3198a1ab9505567d
