@@ -2,7 +2,7 @@
 
 ## uniswap.org (DeFi)
 Signature device: the working swap form is the hero, one card centred under a one-line headline, ringed by blurred token icons.
-Measured 1440 (design/measure/ref-1/summary.json): 4 sizes carry 80% of text (14-24px); 7 text colours; radii top 3 carry 63%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes. Judge frame 1280x720: main reading text 24px, smallest body text 12px, smallest number 14px. At 390 it scrolls sideways (hScroll true), a miss we avoid.
+Measured 1440 (design/measure/ref-3/summary.json): 4 sizes carry 80% of text (14-24px); 7 text colours; radii top 3 carry 61%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes. Judge frame 1280x720: main reading text 24px, smallest body text 12px, smallest number 14px. At 390 it scrolls sideways (hScroll true), a miss we avoid.
 What it does with the core object: the thing the user came for (a quote and a button) is the first and only card on screen one, in real DOM text.
 Take: the core object as one real, centred card in the first viewport, no hero image.
 Leave: floating token icons and pink accent; our proof is a transaction, not a token list.
