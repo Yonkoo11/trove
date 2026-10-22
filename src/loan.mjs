@@ -29,6 +29,8 @@ export function debtAt(loan, at) {
 }
 
 const need = (loan, ...states) => { if (!states.includes(loan.state)) fail(`cannot do this in state ${loan.state}`); };
+// Stray deposits are handled only while the loan never took collateral (no vaultZat), so the vault total is not double counted.
+const needStray = (loan) => { if (loan.vaultZat !== undefined || !['proposed', 'expired', 'aborted'].includes(loan.state)) fail(`cannot do this in state ${loan.state}`); };
 const mark = (loan, state, ev, extra = {}) => ({ ...loan, ...extra, state, history: [...loan.history, { state, at: BigInt(ev.at), ev: ev.type }] });
 
 /** A reading counts only if the keeper signed it for THIS loan, it is fresh, and it is newer than any reading used before. */
@@ -75,17 +77,21 @@ const handlers = {
   },
   // The driver reports every deposit it sees in the vault, whether or not it opens the loan.
   depositSeen(loan, ev) {
-    need(loan, 'proposed', 'expired');
+    needStray(loan);
     if (!ev.txid || BigInt(ev.zat) <= 0n) fail('a deposit needs a txid and a positive amount');
     if ((loan.deposits ?? []).some((d) => d.txid === ev.txid)) fail(`deposit ${ev.txid} already recorded`);
     return { loan: { ...loan, deposits: [...(loan.deposits ?? []), { txid: ev.txid, zat: BigInt(ev.zat) }] }, effects: [] };
   },
-  // A deposit that did not open the loan (late, short, or the lock check threw) sits in the vault: hand back exactly what was recorded.
+  // A deposit that did not open the loan (late, short, or the lock check threw) sits in the vault: hand back exactly what was
+  // recorded, once per deposit. Several strays can each be refunded; a loan that never took collateral stays refundable after the first.
   refundDeposit(loan, ev) {
-    need(loan, 'proposed', 'expired');
+    needStray(loan);
     const dep = (loan.deposits ?? []).find((d) => d.txid === ev.txid);
     if (!dep) fail(`no recorded deposit ${ev.txid} to refund`);
-    return { loan: mark(loan, 'aborted', ev, { refundZat: dep.zat, lockTx: dep.txid }), effects: [release('borrower', ['borrower', 'keeper'], { zat: dep.zat })] };
+    if (dep.refunded) fail(`deposit ${ev.txid} was already refunded`);
+    const deposits = loan.deposits.map((d) => (d.txid === ev.txid ? { ...d, refunded: true } : d));
+    const next = loan.state === 'aborted' ? { ...loan, deposits } : mark(loan, 'aborted', ev, { deposits, refundZat: dep.zat, lockTx: dep.txid });
+    return { loan: next, effects: [release('borrower', ['borrower', 'keeper'], { zat: dep.zat })] };
   },
   loanPaid(loan, ev) {
     need(loan, 'collateral_locked');

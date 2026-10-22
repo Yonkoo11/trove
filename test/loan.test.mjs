@@ -164,7 +164,15 @@ test('A2: a refund needs a recorded deposit and ignores a caller-supplied amount
   const seen = step(fresh(), { type: 'depositSeen', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 's' }).loan;
   throwsMsg(() => step(seen, { type: 'depositSeen', at: T0 + 11, zat: 3n * ZAT_PER_ZEC, txid: 's' }), /already recorded/);
   const done = step(seen, { type: 'refundDeposit', at: T0 + 12, txid: 's' }).loan;
-  throwsMsg(() => step(done, { type: 'refundDeposit', at: T0 + 13, txid: 's' }), /cannot do this/);
+  throwsMsg(() => step(done, { type: 'refundDeposit', at: T0 + 13, txid: 's' }), /already refunded/);
+});
+test('A2: two stray deposits are each refunded once', () => {
+  let l = step(fresh(), { type: 'depositSeen', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 'a' }).loan;
+  l = step(l, { type: 'depositSeen', at: T0 + 11, zat: 4n * ZAT_PER_ZEC, txid: 'b' }).loan;
+  const r1 = step(l, { type: 'refundDeposit', at: T0 + 12, txid: 'a' });
+  const r2 = step(r1.loan, { type: 'refundDeposit', at: T0 + 13, txid: 'b' });
+  assert.equal(r2.effects[0].zat, 4n * ZAT_PER_ZEC);
+  throwsMsg(() => step(r2.loan, { type: 'refundDeposit', at: T0 + 14, txid: 'a' }), /already refunded/);
 });
 test('A2: a refund is refused once the loan is open', () => {
   throwsMsg(() => step(locked(), { type: 'refundDeposit', at: T0 + 20, txid: 'z' }), /cannot do this/);
