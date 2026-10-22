@@ -1,17 +1,23 @@
 # References
 
 ## uniswap.org (DeFi)
-Signature device: the working swap form is the hero, one card centred under a one-line headline, ringed by blurred token icons.
-Measured 1440 (design/measure/ref-3/summary.json): 4 sizes carry 80% of text (14-24px); 7 text colours; radii top 3 carry 61%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes. Judge frame 1280x720: main reading text 24px, smallest body text 12px, smallest number 14px. At 390 it scrolls sideways (hScroll true), a miss we avoid.
-What it does with the core object: the thing the user came for (a quote and a button) is the first and only card on screen one, in real DOM text.
-Take: the core object as one real, centred card in the first viewport, no hero image.
-Leave: floating token icons and pink accent; our proof is a transaction, not a token list.
+Signature device: one real swap card, centred under a one-line headline, is the whole first screen; the nav (Trade, Explore, Pool, Portfolio) is the only other structure.
+Measured 1440 (design/measure/ref-1/summary.json, app.uniswap.org): 4 sizes carry 80% of text (14-24px); 8 text colours; radii top 3 carry 66%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes; smallest body text 12px.
+What it does with the core object: the quote form is the page. Sell and Buy fields, then one big button, with the price detail shown before the user confirms.
+Take: the core object as one real form card in the first viewport, numbers computing as the user types, preview before confirm.
+Leave: token icons, the pink accent, a swap's two-field shape. A loan needs a ticket with more rows (cost, liquidation, who signs).
 
-## chit.tools (DeFi)
-Signature device: a jagged tear splits the two-part headline and reappears on card edges, a product noun used at three scales.
-Measured 1440 (design/measure/ref-2/summary.json): 12 sizes carry 80% of text (11-49px), over budget; 10 text colours; radii top 3 carry 98%; spacing 100% on 2px; most-used transition 150ms; primary CTA in first viewport: yes. Judge frame: main reading text 15px, smallest body text 11px, smallest number 11.5px, under the 16px bar.
-What it does with the core object: states its boundary in the hero ("Private, not anonymous" as a caption), then keeps a "Read the boundary" button next to the main CTA.
-Take: a limits link beside the primary action on screen one.
-Leave: near-black ground with a neon orange, caps captions, 11px text. Both are on the RULEBOOK section 8 list and fail the judge-frame size.
+## wise.com (Consumer fintech)
+Signature device: a working calculator inside the first screen shows exactly what is sent, the fee and the rate, as live numbers.
+Measured 1440 (design/measure/ref-2/summary.json): 3 sizes carry 80% of text (16-20px); 2 text colours; radii top 3 carry 88%; spacing 77% on 2px; most-used transition 300ms; primary CTA in first viewport: yes; no horizontal scroll at 390.
+What it does with the core object: the user types an amount and the page itself prints the fee, the exchange rate and what arrives, before any sign-in.
+Take: print the cost lines under the input as plain sentences with numbers ("you repay", "liquidated if ZEC falls to") so the user can trust the quote before acting.
+Leave: the lime ground, weight-900 all-caps display type and pill buttons. The ground and type are Wise's brand, not ours.
 
-Gap to our build: no build exists yet, so nothing to compare. Phase 3 must land at 4-5 sizes, 16px reading at 1280x720, and no sideways scroll at 390.
+## kamino.finance (extra "Uses today", not a gate reference)
+Measured 1440 (design/measure/ref-3/summary.json): 2 sizes carry 80% (12, 14px); 3 text colours; radii top 3 carry 84%; spacing 73% on 2px; no horizontal scroll at 390.
+What the eyes saw: dark app, top nav (Swap, Earn, Borrow, Multiply, Liquidity, Portfolio), a dense table with APY, deposits, profile and a View or Deposit button on every row.
+Take: a table of loans with state, amounts and one action per row, for the Loans page.
+Leave: dark navy ground, featured vault cards, APY marketing.
+
+Gap to our build: the build in site/index.html is a single judge-facing explainer; it is replaced, not compared. The new build must land at 5 sizes or fewer, 16px reading text at 1280x720, a working form on screen one, and no sideways scroll at 390.

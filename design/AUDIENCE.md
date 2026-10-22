@@ -1,12 +1,12 @@
 # Audience
 
-Who exactly: A ZEC holder who wants a dollar loan without selling or exposing the coins, and the private lender or desk on the other side of that one loan; the page is read first by a Zecathon judge deciding if the privacy claim is true.
+Who exactly: A ZEC holder who wants dollars against their coins without selling or exposing them, and the lender who funds that one loan; the product screen is theirs, and a Zecathon judge is the second reader of the same screen.
 Uses today 1: Kamino ZEC-collateral borrowing on Solana, https://kamino.finance
-Uses today 2: Selling ZEC on an exchange or a swap, https://app.uniswap.org
-Must trust before acting: That the chain really shows nothing about the collateral, and that the page also says what it does not hide; proof on screen is the real field list of a real regtest transaction next to the loan outcomes.
-Data on screen: What the chain shows for the lock transaction (fee 10000 zat, transparent in/out 0/0, 2 Ironwood actions, public fields); the three loan endings with signers and paid amounts (repay 99,990,000 zat borrower; default lender 93,328,625 and borrower 6,641,375; abort 99,990,000 borrower); what stays public (stablecoin leg, keeper reading); the back-test (11% liquidated, 0 bad debt).
+Uses today 2: Uniswap, selling ZEC and holding dollars, https://app.uniswap.org
+Must trust before acting: What the loan costs and when they get liquidated (numbers update as they type), who can move the vault, and what the chain shows; proof is the live loan ticket next to the real lock-transaction fields and a "not hidden" list.
+Data on screen: Collateral in ZEC, max dollars borrowable, LTV, liquidation price, interest and total to repay, term; per loan its state, who signs each ending, and what a public viewer sees (fee 10000 zat, 0 transparent in/out, 2 Ironwood actions); what stays public (stablecoin leg, keeper price).
 Density row: DeFi
-Density reason: The reader is checking what will happen to money before trusting it, so the page puts the real transaction fields and payouts on screen one, as uniswap.org puts the swap form there, and shows risks next to them.
+Density reason: The user is quoting and comparing a loan (numbers, a table of loans, a form) like a Morpho or Kamino user, so the first screen is the working borrow form with live numbers, as Uniswap puts the swap form there.
 Device: laptop, because a Zecathon judge opens the live link or watches a 1280x720 video; the phone is checked but secondary.
 Brand origin: none, there is no existing mark or palette for Shielded Lend.
 Anchor asset: site/gate1-viewer-fields.json
