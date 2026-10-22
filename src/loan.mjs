@@ -16,6 +16,9 @@ export function openLoan({ id, createdAt, terms }) {
   for (const k of ['termSeconds', 'graceSeconds', 'fundWindow', 'payWindow', 'maxPriceAge']) t[k] = BigInt(t[k]);
   if (!t.keeperPubKey) fail('terms.keeperPubKey missing');
   if (t.liqLtvBps <= t.maxStartLtvBps) fail('liquidation line must sit above the opening limit');
+  if (t.liqLtvBps > 10_000n || t.maxStartLtvBps <= 0n) fail('LTV limits must be between 0 and 100%');
+  if (t.aprBps < 0n || t.penaltyBps < 0n || t.graceSeconds < 0n) fail('rates and grace must not be negative');
+  for (const k of ['termSeconds', 'fundWindow', 'payWindow', 'maxPriceAge']) if (t[k] <= 0n) fail(`${k} must be positive`);
   if (t.principal <= 0n || t.collateralZat <= 0n) fail('amounts must be positive');
   return { id, terms: t, state: 'proposed', createdAt: BigInt(createdAt), lastPriceTs: 0n, lastAt: BigInt(createdAt), history: [] };
 }
@@ -53,7 +56,8 @@ const release = (to, signers, extra = {}) => ({ type: 'release', to, signers, ..
 
 function declareDefault(loan, ev, reason, price) {
   const settlement = settleDefault(loan, ev.at, price);
-  const next = mark(loan, 'defaulted', ev, { lastPriceTs: BigInt(ev.reading.ts), defaultReason: reason, settlement });
+  const pending = settlement.borrowerZat > 0n ? ['lender', 'borrower'] : ['lender'];
+  const next = mark(loan, 'defaulted', ev, { lastPriceTs: BigInt(ev.reading.ts), defaultReason: reason, settlement, pending });
   return { loan: next, effects: [release('lender+borrower', ['lender', 'keeper'], { settlement, reason })] };
 }
 
@@ -62,6 +66,10 @@ const handlers = {
     need(loan, 'proposed');
     if (BigInt(ev.at) > loan.createdAt + loan.terms.fundWindow) fail('collateral arrived after the funding window');
     if (BigInt(ev.zat) < loan.terms.collateralZat) fail('collateral below the agreed amount');
+    // Check the opening price BEFORE the lender is told to pay, so a failed check cannot leave them paying into an abort.
+    const price = checkReading(loan, ev.reading, ev.at);
+    const ltv = ltvBps(loan.terms.principal, loan.terms.collateralZat, price);
+    if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
     return { loan: mark(loan, 'collateral_locked', ev, { lockedAt: BigInt(ev.at), lockTx: ev.txid }), effects: [{ type: 'ask-lender-to-pay' }] };
   },
   loanPaid(loan, ev) {
@@ -104,6 +112,13 @@ const handlers = {
   releaseConfirmed(loan, ev) {
     const to = { repaid: 'closed_repaid', defaulted: 'closed_defaulted', aborted: 'closed_aborted' }[loan.state];
     if (!to) fail(`nothing to release in state ${loan.state}`);
+    if (loan.state === 'defaulted') {
+      // a default pays two parties; close only when both payouts are confirmed, each named by ev.to
+      if (!loan.pending.includes(ev.to)) fail(`no pending payout to ${ev.to}`);
+      const pending = loan.pending.filter((x) => x !== ev.to);
+      if (pending.length) return { loan: { ...loan, pending, paidOut: { ...loan.paidOut, [ev.to]: ev.txid } }, effects: [] };
+      return { loan: mark(loan, to, ev, { releaseTx: ev.txid, pending, paidOut: { ...loan.paidOut, [ev.to]: ev.txid } }), effects: [] };
+    }
     return { loan: mark(loan, to, ev, { releaseTx: ev.txid }), effects: [] };
   },
 };

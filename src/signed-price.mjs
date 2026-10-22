@@ -16,6 +16,7 @@ export function readingBytes(r) {
 }
 
 export function signReading({ loanId, priceMicroUsd, ts, source }, privateKeyPem) {
+  if (!Number.isInteger(ts)) throw new Error('ts must be whole seconds');
   const r = { loanId, priceMicroUsd: BigInt(priceMicroUsd), ts, source };
   const sig = sign(null, readingBytes(r), createPrivateKey(privateKeyPem)).toString('hex');
   return { ...r, sig };

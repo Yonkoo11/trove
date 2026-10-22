@@ -25,19 +25,20 @@ export const SOURCES = {
   },
 };
 
-const median = (xs) => { const s = [...xs].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)); return s[Math.floor(s.length / 2)]; };
+const median = (xs) => { const s = [...xs].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)); const h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2n; };
 
-/** Ask every source, drop failures, need `minSources` answers, and every answer within `maxDevBps` of the median. */
+/** Ask every source, drop failures, need `minSources` answers, and at least `minSources` within `maxDevBps` of the median (outliers are dropped). Even counts average the middle two. */
 export async function readPrice({ sources = SOURCES, fetchFn = fetch, minSources = 2, maxDevBps = 300n } = {}) {
   const settled = await Promise.allSettled(Object.entries(sources).map(async ([name, fn]) => [name, await fn(fetchFn)]));
   const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value).filter(([, p]) => p > 0n);
   if (ok.length < minSources) throw new Error(`only ${ok.length} price source(s) answered, need ${minSources}`);
-  const med = median(ok.map(([, p]) => p));
-  for (const [name, p] of ok) {
-    const dev = (p > med ? p - med : med - p) * 10_000n / med;
-    if (dev > maxDevBps) throw new Error(`source ${name} is ${dev} bps from the median, refusing to sign`);
-  }
-  return { priceMicroUsd: med, source: ok.map(([n]) => n).sort().join('+') };
+  const first = median(ok.map(([, p]) => p));
+  const dev = (p, m) => (p > m ? p - m : m - p) * 10_000n / m;
+  // one off-market source (thin book, bad feed) is dropped, it cannot stop the keeper; too few agreeing sources refuse
+  const agree = ok.filter(([, p]) => dev(p, first) <= maxDevBps);
+  if (agree.length < minSources) throw new Error(`sources disagree: ${agree.length} within ${maxDevBps} bps of the median, need ${minSources}, refusing to sign`);
+  const med = median(agree.map(([, p]) => p));
+  return { priceMicroUsd: med, source: agree.map(([n]) => n).sort().join('+') };
 }
 
 /** `now` is the keeper host's clock, in seconds. Returns a signed reading for one loan. */

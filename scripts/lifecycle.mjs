@@ -31,7 +31,7 @@ const log = (s) => { results.steps.push(s); console.log(s); };
 
 sh('lock.sh', '100000000');
 log(`collateral locked in the vault (real regtest transaction)`);
-({ loan } = step(loan, { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock' }));
+({ loan } = step(loan, { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 50) }));
 
 const before = { borrower: bal('borrower'), lender: bal('lender') };
 if (scenario === 'C') {
@@ -56,7 +56,8 @@ if (scenario === 'C') {
     log(`price fell to $45, state ${loan.state}, lender gets ${s.lenderZat} zat, borrower gets ${s.borrowerZat} zat, signers ${eff.signers}`);
     const t1 = doRelease(eff, 'lender', s.lenderZat - FEE);
     const t2 = s.borrowerZat > 2n * FEE ? doRelease(eff, 'borrower', s.borrowerZat - 2n * FEE) : '';
-    ({ loan } = step(loan, { type: 'releaseConfirmed', at: at + 100, txid: t1 }));
+    ({ loan } = step(loan, { type: 'releaseConfirmed', at: at + 100, txid: t1, to: 'lender' }));
+    if (t2) ({ loan } = step(loan, { type: 'releaseConfirmed', at: at + 200, txid: t2, to: 'borrower' }));
     results.settlement = { lenderZat: String(s.lenderZat), borrowerZat: String(s.borrowerZat) };
   }
 }

@@ -14,7 +14,7 @@ const terms = () => ({
 // 10 ZEC at $50 = $500; debt $200 => 40% LTV
 const rd = (loanId, price, ts) => signReading({ loanId, priceMicroUsd: BigInt(price), ts, source: 't' }, key.privateKeyPem);
 const fresh = () => openLoan({ id: 'L1', createdAt: T0, terms: terms() });
-const locked = () => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 10n * ZAT_PER_ZEC, txid: 'a' }).loan;
+const locked = () => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 10n * ZAT_PER_ZEC, txid: 'a', reading: rd('L1', 50_000_000, T0 + 5) }).loan;
 const active = () => step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 200_000_000n, reading: rd('L1', 50_000_000, T0 + 90) }).loan;
 const throwsMsg = (f, re) => assert.throws(f, re);
 
@@ -86,14 +86,14 @@ test('forged, stale, wrong-loan, future and replayed readings rejected', () => {
 });
 test('illegal transitions rejected', () => {
   throwsMsg(() => step(fresh(), { type: 'repaid', at: T0, amount: 1n, ref: 'x' }), /cannot do this/);
-  throwsMsg(() => step(locked(), { type: 'collateralLocked', at: T0 + 20, zat: 10n * ZAT_PER_ZEC, txid: 'b' }), /cannot do this/);
+  throwsMsg(() => step(locked(), { type: 'collateralLocked', at: T0 + 20, zat: 10n * ZAT_PER_ZEC, txid: 'b', reading: rd('L1', 50_000_000, T0 + 15) }), /cannot do this/);
   throwsMsg(() => step(active(), { type: 'releaseConfirmed', at: T0 + 300, txid: 'x' }), /nothing to release/);
   throwsMsg(() => step(fresh(), { type: 'nope', at: 1 }), /unknown event/);
   throwsMsg(() => step(fresh(), { type: 'tick' }), /needs a time/);
 });
 test('short collateral and late collateral rejected', () => {
-  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 1n, txid: 'a' }), /below the agreed/);
-  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 3601, zat: 10n * ZAT_PER_ZEC, txid: 'a' }), /funding window/);
+  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 1n, txid: 'a', reading: rd('L1', 50_000_000, T0 + 5) }), /below the agreed/);
+  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 3601, zat: 10n * ZAT_PER_ZEC, txid: 'a', reading: rd('L1', 50_000_000, T0 + 3600) }), /funding window/);
 });
 test('tick: unfunded expires; unpaid loan aborts back to borrower via borrower+keeper', () => {
   assert.equal(step(fresh(), { type: 'tick', at: T0 + 3601 }).loan.state, 'expired');
@@ -122,4 +122,23 @@ test('loan payment below principal or without amount rejected', () => {
   const ev = { type: 'loanPaid', at: T0 + 100, ref: 'p', reading: rd('L1', 50_000_000, T0 + 90) };
   throwsMsg(() => step(locked(), ev), /below the principal/);
   throwsMsg(() => step(locked(), { ...ev, amount: 199_999_999n }), /below the principal/);
+});
+
+test('lender is not asked to pay when the opening price already fails the limit', () => {
+  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 10n * ZAT_PER_ZEC, txid: 'a', reading: rd('L1', 30_000_000, T0 + 5) }), /opening LTV/);
+  throwsMsg(() => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 10n * ZAT_PER_ZEC, txid: 'a' }), /signature invalid/);
+});
+test('a default closes only after both payouts are confirmed, each to its own party', () => {
+  const at = T0 + 3600;
+  const d = step(active(), { type: 'price', at, reading: rd('L1', 22_000_000, at - 10) }).loan;
+  assert.deepEqual(d.pending, ['lender', 'borrower']);
+  throwsMsg(() => step(d, { type: 'releaseConfirmed', at: at + 1, txid: 'x', to: 'keeper' }), /no pending payout/);
+  const half = step(d, { type: 'releaseConfirmed', at: at + 1, txid: 't1', to: 'lender' }).loan;
+  assert.equal(half.state, 'defaulted');
+  throwsMsg(() => step(half, { type: 'releaseConfirmed', at: at + 2, txid: 't1b', to: 'lender' }), /no pending payout/);
+  assert.equal(step(half, { type: 'releaseConfirmed', at: at + 2, txid: 't2', to: 'borrower' }).loan.state, 'closed_defaulted');
+});
+test('nonsense terms rejected', () => {
+  const bad = (o) => throwsMsg(() => openLoan({ id: 'X', createdAt: T0, terms: { ...terms(), ...o } }), /./);
+  bad({ liqLtvBps: 12000 }); bad({ termSeconds: -1 }); bad({ aprBps: -5 }); bad({ penaltyBps: -1 }); bad({ maxPriceAge: 0 });
 });

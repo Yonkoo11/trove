@@ -18,8 +18,13 @@ test('one source down is fine when two remain', async () => {
 test('refuses with fewer than two answers', async () => {
   await assert.rejects(readPrice({ sources: { a: ok(1n), b: bad, c: bad } }), /only 1/);
 });
-test('refuses when a source disagrees by more than 3%', async () => {
-  await assert.rejects(readPrice({ sources: { a: ok(50_000_000n), b: ok(50_100_000n), c: ok(60_000_000n) } }), /refusing to sign/);
+test('refuses when sources disagree by more than 3% and fewer than two agree', async () => {
+  await assert.rejects(readPrice({ sources: { a: ok(50_000_000n), b: ok(60_000_000n) } }), /refusing to sign/);
+  await assert.rejects(readPrice({ sources: { a: ok(50_000_000n), b: ok(60_000_000n), c: ok(70_000_000n) } }), /refusing to sign/);
+});
+test('one outlier is dropped, the agreeing sources still sign', async () => {
+  const r = await readPrice({ sources: { a: ok(50_000_000n), b: ok(50_100_000n), c: ok(60_000_000n) } });
+  assert.equal(r.source, 'a+b'); assert.equal(r.priceMicroUsd, 50_050_000n);
 });
 test('zero or negative price is dropped', async () => {
   await assert.rejects(readPrice({ sources: { a: ok(0n), b: ok(50_000_000n) } }), /only 1/);
