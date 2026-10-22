@@ -10,5 +10,5 @@ Density reason: The reader is checking what will happen to money before trusting
 Device: laptop, because a Zecathon judge opens the live link or watches a 1280x720 video; the phone is checked but secondary.
 Brand origin: none, there is no existing mark or palette for Shielded Lend.
 Anchor asset: site/gate1-viewer-fields.json
-Anchor rung: 1 found in the product, the real field list of the regtest lock transaction (ai/gate1-viewer-fields.json), printed as a receipt
-Anchor provenance: produced by running a lender+keeper signed spend on the local regtest chain on 2026-10-20 and reading the transaction as a public viewer; file copied from ai/gate1-viewer-fields.json; no image, the receipt is set in type.
+Anchor rung: 1 found in the product, the real field list of the regtest lock transaction (docs/gate1-viewer-fields.json), printed as a receipt
+Anchor provenance: produced by running a lender+keeper signed spend on the local regtest chain on 2026-10-20 and reading the transaction as a public viewer; file copied from docs/gate1-viewer-fields.json; no image, the receipt is set in type.

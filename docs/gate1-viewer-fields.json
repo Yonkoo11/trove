@@ -1,0 +1,21 @@
+{
+ "txid": "04e045ba15a6ad5fab96467e976eb7636ebcead750095d70309a0d407f9bc169",
+ "height": 117,
+ "version": 6,
+ "transparent_in_out": [
+  0,
+  0
+ ],
+ "ironwood_actions": 2,
+ "public_fields_per_action": [
+  "cmx",
+  "cv",
+  "encCiphertext",
+  "ephemeralKey",
+  "nullifier",
+  "outCiphertext",
+  "rk",
+  "spendAuthSig"
+ ],
+ "valueBalanceZat": 10000
+}

@@ -10,7 +10,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 |---|---|---|
 | Loan rules (open, repay, price default, term default, abort) | `npm test`: 40 pass, 0 fail | tested |
 | Lock, repay, default and abort move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C` on regtest, balances checked after each | tested (regtest only) |
-| A viewer of the chain sees only the fee | `ai/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
+| A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
 | Fresh-context attacker review | 10 findings, 7 fixed with tests (see `ai/progress.md`) | reviewed, not proven |
 | Forged signature rejected by the node | signer tool rejects a random signature; a forged one sent straight to the node was not tried | not tested |
