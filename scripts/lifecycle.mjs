@@ -1,5 +1,6 @@
-// Drives the loan rules against the regtest chain. node scripts/lifecycle.mjs A|B|C
-// A repay (borrower+lender), B price default (two lender+keeper releases), C abort (borrower+keeper).
+// Drives the loan rules against the regtest chain. node scripts/lifecycle.mjs A|B|C|D
+// A repay (borrower+lender), B price default (two lender+keeper releases), C abort (borrower+keeper),
+// D deposit arrives after the funding window and is refunded in full (borrower+keeper).
 // Loan time is simulated; the lock and every release are real regtest transactions signed 2-of-3 with FROST.
 import { execFileSync } from 'node:child_process';
 import { newKeeperKey, signReading } from '../src/signed-price.mjs';
@@ -34,10 +35,19 @@ const log = (s) => { results.steps.push(s); console.log(s); };
 
 sh('lock.sh', '100000000');
 log(`collateral locked in the vault (real regtest transaction)`);
-({ loan } = step(loan, { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 50) }));
+if (scenario !== 'D') ({ loan } = step(loan, { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 50) }));
 
 const before = { borrower: bal('borrower'), lender: bal('lender') };
-if (scenario === 'C') {
+if (scenario === 'D') {
+  const late = { type: 'collateralLocked', at: T0 + 4000, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 3990) };
+  try { step(loan, late); throw new Error('a late deposit must be refused'); } catch (e) { log(`late deposit refused by the rules: ${e.message}`); }
+  ({ loan } = step(loan, { type: 'depositSeen', at: late.at, zat: late.zat, txid: late.txid }));
+  const r = step(loan, { type: 'refundDeposit', at: late.at + 10, txid: late.txid });
+  loan = r.loan;
+  log(`refund approved, state ${loan.state}, release signers ${r.effects[0].signers}`);
+  const tx = doRelease(r.effects[0], 'borrower', 100_000_000n - FEE);
+  ({ loan } = step(loan, { type: 'releaseConfirmed', at: late.at + 100, txid: tx }));
+} else if (scenario === 'C') {
   let r = step(loan, { type: 'tick', at: T0 + 60 + 3601 }); loan = r.loan;
   const eff = r.effects[0];
   log(`pay window passed, state ${loan.state}, release signers ${eff.signers}`);

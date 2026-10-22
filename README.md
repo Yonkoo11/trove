@@ -11,7 +11,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | Capability | Evidence | Status |
 |---|---|---|
 | Loan rules (open, repay, price default, term default, abort) | `npm test`: 47 pass, 0 fail | tested |
-| Lock, repay, default and abort move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C` on regtest, balances checked after each | tested (regtest only) |
+| Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
 | Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 and lender overpayment disclosed below | reviewed, not proven |
@@ -38,14 +38,14 @@ npm test                         # 42 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 ```
 
-Chain runs need the local regtest stack (zebrad, zainod, frost-zcash-demo built under `spike/`, which is not committed); see `spike-scripts/gate2-setup.sh` then `node scripts/lifecycle.mjs A`. Expected: A ends `closed_repaid` with the borrower +99990000 zat, B ends `closed_defaulted` (lender +93328625, borrower +6641375), C ends `closed_aborted` with the borrower +99990000. Those are the numbers from the 2026-10-22 runs.
+Chain runs need the local regtest stack (zebrad, zainod, frost-zcash-demo built under `spike/`, which is not committed); see `spike-scripts/gate2-setup.sh` then `node scripts/lifecycle.mjs A`. Expected: A ends `closed_repaid` with the borrower +99990000 zat, B ends `closed_defaulted` (lender +93328625, borrower +6641375), C ends `closed_aborted` with the borrower +99990000, D (deposit after the funding window) is refused by the rules, then refunded to the borrower +99990000 (`closed_aborted`). Those are the numbers from the 2026-10-22 runs.
 
 ## Project layout
 
 ```
 trove/
 ├── src/       loan rules, BigInt money maths, signed keeper price
-├── scripts/   lifecycle.mjs (regtest runs A, B, C), backtest.mjs
+├── scripts/   lifecycle.mjs (regtest runs A, B, C, D), backtest.mjs
 ├── site/      the app: Borrow, Loans, Lend, Limits (static, no build step)
 ├── test/      unit and random-sequence stress tests
 ├── docs/      gate1-viewer-fields.json, what a chain viewer sees
