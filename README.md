@@ -1,0 +1,50 @@
+# Shielded Lend
+
+A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
+
+Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; not run on public testnet; not audited.
+
+## What is proven, and what is not
+
+| Claim | Evidence | State |
+|---|---|---|
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 35 pass, 0 fail | tested |
+| Lock, repay, default and abort move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C` on regtest, balances checked after each | tested (regtest only) |
+| A viewer of the chain sees only the fee | `ai/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
+| Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
+| Fresh-context attacker review | 10 findings, 7 fixed with tests (see `ai/progress.md`) | reviewed, not proven |
+| Forged signature rejected by the node | signer tool rejects a random signature; a forged one sent straight to the node was not tried | not tested |
+| Public testnet run | none | not done |
+
+## What this does not hide or stop
+
+- **The stablecoin leg is public.** Principal and repayment cross chains and are visible there.
+- **Policy is software, not chain law.** Any 2 of the 3 keys can spend. Keeper + lender together can take the collateral. Who signs each payout is enforced by `src/loan.mjs`, not by Zcash.
+- **The price is the keeper's reading.** Median of at least two keyless sources (CoinGecko live; Coinbase and Kraken parsers tested only against sample replies), signed with ed25519, not verified on-chain.
+- **The FROST crates are unaudited** and the demo tool is marked "not for production". The orchard fork with FROST support (`unstable-frost`, zcash/orchard#475) is unmerged.
+- **Event time is supplied by the driver.** The rules trust it to come from a trusted clock or block time.
+- Not handled yet: late or short deposits stuck in the vault, over-locked collateral, one shared vault across many loans, duplicate loan ids (attacker findings A2, A3, A7, A9).
+
+## Verify it yourself
+
+```
+npm test                         # 35 pass, 0 fail
+node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
+```
+
+Chain runs need the local regtest stack (zebrad, zainod, frost-zcash-demo built under `spike/`, which is not committed); see `spike-scripts/gate2-setup.sh` then `node scripts/lifecycle.mjs A`. Expected: A ends `closed_repaid` with the borrower +99990000 zat, B ends `closed_defaulted` (lender +93328625, borrower +6641375), C ends `closed_aborted` with the borrower +99990000. Those are the numbers from the 2026-10-22 runs.
+
+## Layout
+
+```
+src/money.mjs         integer money math (rounds against the borrower where it must)
+src/loan.mjs          pure state machine: step(loan, event) -> loan + release effects
+src/signed-price.mjs  keeper-signed price readings (ed25519)
+src/keeper.mjs        multi-source price read with spread check
+src/defaults.mjs      40/70 limits from the back-test
+scripts/              lifecycle driver, back-test
+spike-scripts/        regtest setup, lock, 2-of-3 release
+data/                 365 days of ZEC/USD
+```
+
+MIT licensed.
