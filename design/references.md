@@ -2,7 +2,7 @@
 
 ## uniswap.org (DeFi)
 Signature device: one real swap card, centred under a one-line headline, is the whole first screen; the nav (Trade, Explore, Pool, Portfolio) is the only other structure.
-Measured 1440 (design/measure/ref-1/summary.json, app.uniswap.org): 4 sizes carry 80% of text (14-24px); 8 text colours; radii top 3 carry 66%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes; smallest body text 12px.
+Measured 1440 (design/measure/ref-1/summary.json): 4 sizes carry 80% of text (14-24px); 7 text colours; radii top 3 carry 66%; spacing 98% on 2px; most-used transition 200ms; primary CTA in first viewport: yes; smallest body text 12px.
 What it does with the core object: the quote form is the page. Sell and Buy fields, then one big button, with the price detail shown before the user confirms.
 Take: the core object as one real form card in the first viewport, numbers computing as the user types, preview before confirm.
 Leave: token icons, the pink accent, a swap's two-field shape. A loan needs a ticket with more rows (cost, liquidation, who signs).

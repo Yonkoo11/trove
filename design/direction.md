@@ -2,49 +2,49 @@
 
 Audience row: DeFi
 Reference 1: uniswap.org
-Reference 2: chit.tools
+Reference 2: wise.com
 
-## Direction A: Lock receipt
+## Direction A: Loan ticket
 
-Screen one is one narrow receipt set on a pale ground: the real field list of the regtest lock transaction (txid, height 117, version 6, transparent in and out 0/0, 2 Ironwood actions, fee 10000 zat, and the public fields of each action) printed as dotted-leader lines in monospace. Beside it sits a plain column listing what the borrower, lender and keeper each can do with the vault. The signature device is the receipt, from the noun in the product (a lock receipt); the anchor file site/gate1-viewer-fields.json is rendered as the receipt itself, white paper on a grey-green ground, 1 degree tilt, one soft shadow, ink taken from the file's own hex-string text, no image.
-Tokens: type 14/16/20/32/56px; body weight 400, headline weight 450; families system-ui sans and ui-monospace; ground #F3F4F1, paper #FFFFFF, ink #15171A, muted #5B6168, accent #0B6B52; radius 2px receipt, 6px buttons, 12px panels; spacing step 4px; curve cubic-bezier(0.22,1,0.36,1); interaction 200ms; entrance 600ms
-Reference: uniswap.org; the core object as one real centred card in the first viewport, no hero image.
-Fits: AUDIENCE "proof on screen is the real field list of a real regtest transaction" and JUDGE sponsor screen "the receipt panel on screen one".
+The first screen is a working borrow form: the user types how much ZEC to lock and the page prints the dollars they can borrow, the loan-to-value, the ZEC price at which the vault is liquidated, the interest and the total to repay, all computed in the browser from the same rules the tests run. A tear-off stub at the bottom of the ticket lists what a public viewer of the lock transaction sees (fee 10,000 zat, 0 transparent inputs and outputs, 2 Ironwood actions), and the same stub repeats on every loan row and the loan page. The anchor is the real field list from the Gate 1 run, printed as that stub in the receipt treatment, so the proof sits inside the product instead of beside it.
+Tokens: sizes 12, 14, 16, 24, 40px; headline weight 500 at 24px, big result number 40px weight 500; one family (Geist, variable); ground #F4F5F7, paper #FFFFFF, ink #12151A, muted #5E6670; accent #F4B728 on the primary button with ink text; radius 6px controls, 12px panels, 2px stub; spacing 4px step; curve cubic-bezier(0.22,1,0.36,1); interaction 200ms; entrance 400ms once; loops none.
+Reference: uniswap.org, the one real form card as the first screen with the preview before the button.
+Fits: AUDIENCE "the product screen is theirs" and "live loan ticket numbers (cost, liquidation)"; JUDGE "Sponsor screen" receipt of the real lock transaction fields.
 
-## Direction B: Three endings ledger
+## Direction B: Loan desk
 
-Screen one is a horizontal timeline of one loan with the three real endings (repaid, defaulted, aborted) as three rows, each with who signed and the amounts paid in zat, and the lock transaction fields pushed below the fold as a smaller table. The signature device is the ledger row, from the noun loan; the anchor asset appears as a collapsed block under the timeline. Dark ground #101214 with a single mint accent #5CE1B0, which reads fast on video.
-Tokens: type 14/16/20/28/48px; body weight 400, headline weight 400; families system-ui sans and ui-monospace; ground #101214, ink #ECEFF1, muted #8A9399, accent #5CE1B0; radius 4px rows, 8px buttons; spacing step 4px; curve cubic-bezier(0.22,1,0.36,1); interaction 150ms; entrance 400ms
-Reference: chit.tools; the boundary link sitting beside the main action.
-Fits: AUDIENCE "the three loan endings with signers and paid amounts" and JUDGE "three real loan endings paid out correctly".
+The first screen is a dense table of loans in the manner of Kamino and Morpho: every row is a loan with its state, collateral, borrowed amount, LTV, the signers who can end it and a View button, with filters above. A borrow action opens a side drawer with the form. It reads like a market a lender browses, and the anchor stub shows only inside the drawer and the row detail. It suits a lender comparing many offers, which this product does not have: there are three regtest runs and no market, so the table would be padded to look like activity.
+Tokens: sizes 12, 13, 14, 16, 20px; weight 500; one family; dark ground #0F1729, ink #E8ECF4, muted #8C97AD; accent #4C8DFF; radius 6px and 8px; spacing 4px step; curve cubic-bezier(0.22,1,0.36,1); interaction 160ms; entrance none; loops none.
+Reference: wise.com is not used here; the move is from the Kamino measurement, a per-row action in a dense table.
+Fits: AUDIENCE "Data on screen" per loan state; fails JUDGE "First 60 seconds" because the sponsor proof is hidden behind a click.
 
-## Direction C: Redacted agreement
+## Direction C: Quote first
 
-Screen one is a loan agreement document with bars blacked out over the borrower, amount and collateral fields, to dramatise what the chain does not show. The signature device is the redaction bar, from the noun "shielded"; the anchor asset is shown as the unredacted list underneath, revealed on click. Near-black ground with a white document and a red accent for the bars.
-Tokens: type 14/16/24/40/64px; body weight 400, headline weight 500; families system-ui sans and ui-monospace; ground #0E0E10, paper #F7F7F5, ink #111111, accent #D6362B; radius 2px; spacing step 4px; curve cubic-bezier(0.22,1,0.36,1); interaction 200ms; entrance 500ms
-Reference: chit.tools; one device (a visual split between hidden and shown) reused across sections.
-Fits: AUDIENCE "what the chain shows vs what each party sees" and JUDGE "Does it actually preserve privacy".
+The first screen is a large calculator on a coloured ground in the manner of Wise: one big amount field, a plain-sentence result ("You get $X. You repay $Y on 21 Nov. We liquidate if ZEC falls to $Z.") and one button, with the stub folded into a "what the chain shows" disclosure under the sentence. It is the clearest for a first-time borrower and the lowest density, but a lender and a judge need the signers and the privacy fields on screen at once, and the disclosure hides them. The anchor sits in the disclosure only.
+Tokens: sizes 16, 20, 32, 56px; weight 500 headline; one family; ground #EAF2E3, ink #0E1F0F, muted #4C5F4D; accent #1F7A3D; radius 999px buttons, 16px panels; spacing 4px step; curve cubic-bezier(0.22,1,0.36,1); interaction 200ms; entrance 400ms; loops none.
+Reference: wise.com, the live cost lines printed as sentences under the input.
+Fits: AUDIENCE "Must trust before acting" for the borrower; weak on JUDGE "Sponsor screen" because the receipt is collapsed.
 
 ## Pick
 
 Chosen: A
-Why: The Density row is DeFi, so the reader checks what happens to money before trusting it, and AUDIENCE says the proof is "the real field list of a real regtest transaction". The criterion asks "Does it actually preserve privacy, or does it only look like it does?", so the page has to show data a judge can check against the chain, not a picture of secrecy. A puts that data on screen one in real DOM text on a light ground that survives a 1280x720 video. It also takes uniswap.org's one real card and gives the limits their own section and a link beside the main button.
-Lost: B lost because the loan endings are not the privacy proof and push the lock fields below the fold, against the JUDGE sponsor screen line. C lost because blacked-out bars are exactly what only looks like privacy, with no data behind them, against the Privacy criterion and the "real fields" line.
+Why: The Density row is DeFi, and the user in AUDIENCE is a ZEC holder who "quotes and compares a loan" before signing, so screen one must be the working form with live numbers, as Uniswap does. The JUDGE criterion "Does it actually preserve privacy, or does it only look like it does?" is answered by the stub next to the numbers, visible on the first screen at 1280x720, not behind a click. A takes Wise's plain cost lines into the ticket as well, so the borrower trust need is met without losing the proof.
+Lost: B lost because AUDIENCE "Data on screen" is a single loan ticket, not a market, and a table of three regtest runs reads as fake activity and hides the sponsor proof behind a click. C lost because the JUDGE "Sponsor screen" requires the receipt of the real lock fields on screen one and C collapses it into a disclosure, and its green ground and display type are Wise's brand.
 
 ## Contract
 
-Signature device: the receipt, dotted-leader lines of real values in monospace on white paper, used for the lock transaction, each loan ending, the still-public list, the back-test and the verify commands, so every section is one receipt.
-Motion: one curve cubic-bezier(0.22,1,0.36,1); interaction 200ms; the one entrance is the lock receipt printing in line by line over 600ms; loops: none.
-Ground: light, because the reader is checking money and the page reads on a laptop and in a 720p video, and a receipt is paper.
-Limits: a section named "What this does not hide or stop" in the same type size as the features, placed before the final call to action, plus a link to it beside the primary button on screen one.
-Layout: first screen has the lock receipt on the left and the party columns (borrower, lender, keeper, public viewer) on the right with the primary button "Verify it yourself" and the link "Read the limits" under the headline; then the three loan endings, what stays public, the back-test, the limits, the verify block, and the footer.
+Signature device: the loan ticket with a tear-off stub printing what a public viewer of the lock transaction sees; the Loans rows, the loan page and the lender view each carry the same stub, and the Limits page is the one screen that does not, because it lists what the chain does not hide.
+Motion: one curve cubic-bezier(0.22,1,0.36,1); interactions 200ms; one entrance of 400ms on the ticket, played once; no loops. Numbers update without animation because users retype them often.
+Ground: light, because the user compares quotes in daylight like a Uniswap or Wise user and a light ground keeps the 12px stub legible at 1280x720 on video; a single ground avoids doubling the surface.
+Limits: a Limits page linked in the top nav and a one-line "regtest, no real funds" banner on every screen, set in the same type size as the ticket rows.
+Layout: top nav (name, Borrow, Loans, Lend, Limits) then, on Borrow, the loan ticket form on the left and the "what the chain shows" stub panel on the right; below, the plain-language cost sentences; Loans is a table with a stub line per row; footer with the verify commands.
 
 ## Headline
 
-Option 1: ZEC collateral goes into a shielded vault, and a public viewer of the lock transaction sees the fee and encrypted fields.
-Option 2: Fixed-term dollar loans against ZEC, with the collateral held in a shielded vault that needs two of three signers to open.
-Option 3: These are the real fields a public viewer reads from a Shielded Lend lock transaction, and what each party can do instead.
+Option 1: Borrow dollars against your ZEC, with the collateral held in a shielded vault.
+Option 2: A two-party ZEC loan where the vault shows a public viewer only the fee.
+Option 3: Lock ZEC, get dollars, repay later, and see exactly what the chain shows.
 Picked: 1
 Picked by: model
 Headline: picked by model, needs owner
-Brief hash: 35a4b68c5518eb48
+Brief hash: 25fe8df078f7e90c

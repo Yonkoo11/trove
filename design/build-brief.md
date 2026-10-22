@@ -1,55 +1,71 @@
-# Build brief: Shielded Lend, one page
+# Build brief: Shielded Lend, the borrow app
 
 Every number here is a decision. Where a value is given, use it exactly. Where copy is given, use it verbatim. Read the whole brief before writing a line.
 
 ## Direction
 
-Chosen: A, Lock receipt. Reference move: uniswap.org's one real card in the first viewport, plus a limits link beside the main button.
+Chosen: A, Loan ticket. Reference move: uniswap.org's one real form card as the first screen with the preview before the button, plus wise.com's cost lines as plain sentences under the input.
 
-Layout: first screen has the lock receipt on the left and the party columns (borrower, lender, keeper, public viewer) on the right with the primary button "Verify it yourself" and the link "Read the limits" under the headline; then the three loan endings, what stays public, the back-test, the limits, the verify block, and the footer.
+Layout: top nav (name, Borrow, Loans, Lend, Limits) then, on Borrow, the loan ticket form on the left and the "what the chain shows" stub panel on the right; below, the plain-language cost sentences; Loans is a table with a stub line per row; footer with the verify commands.
 
-Headline (verbatim, h1): ZEC collateral goes into a shielded vault, and a public viewer of the lock transaction sees the fee and encrypted fields.
+Headline (verbatim, h1 on Borrow): Borrow dollars against your ZEC, with the collateral held in a shielded vault.
+
+Product name is one constant, NAME in site/app.js, value "Shielded Lend". The owner may change it; no other file hard-codes it.
 
 ## Tokens
 
-- Ground #F3F4F1, paper #FFFFFF, ink #15171A, muted #5B6168, accent #0B6B52, rule #D9DCD6. Text colours in use: ink, muted, accent, paper (on the button only).
-- Type sizes 14, 16, 20, 32, 56px. Body weight 400 at 16px/24px. Headline and h2 weight 450 at 32px/40px. h3 weight 450 at 20px/24px. Receipt text mono 14px/24px. The 56px/56px figure is the fee only, 32px/40px under 900px width.
-- Families: system-ui sans and ui-monospace. No web fonts.
-- Radius 2px receipt, 6px buttons, 12px panels. Spacing step 4px, gaps 16, 24, 48px, section padding 64px.
-- Curve cubic-bezier(0.22,1,0.36,1). Interaction 200ms. Entrance 600ms. Loops: none.
-- Receipt: white paper, rotate(-1deg) on the first-screen receipt only, one shadow 0 8px 24px rgba(21,23,26,0.10), dotted leader between key and value, tabular-nums on every value.
+- Ground #F4F5F7, paper #FFFFFF, ink #12151A, muted #5E6670, accent #F4B728 (primary button only, ink text on it), rule #D9DCE1. Text colours in use: ink, muted, red #B42318 and green #067647 for loan state only, always with a word beside them.
+- Type sizes 12, 14, 16, 24, 40px. Body 14px/20px weight 400. Inputs 16px. Headline h1 24px/32px weight 500. The result number 40px/48px weight 500. Stub text 12px/16px. Nothing else.
+- One family: Geist variable, WOFF2 inside site/fonts/, `font-display: swap`, system-ui fallback. tabular-nums on every number.
+- Radius 6px controls, 12px panels, 2px stub. Spacing step 4px (halves of 2px allowed), gaps 8, 16, 24, 48px.
+- Curve cubic-bezier(0.22,1,0.36,1). Interaction 200ms. Entrance 400ms once on the ticket (opacity 0 to 1, 4px rise). Loops: none. Numbers update without animation.
+- One shadow recipe: 0 1px 2px rgba(18,21,26,0.08) on panels. Stub: white paper, dotted leader between key and value, torn top edge made with a 2px dashed rule.
+- No `transition: all`. Reduced motion: blanket rule, animation none, transitions 1ms, scroll-behavior auto.
 
-## Entrance table
+## Screens
 
-Head 0ms, rows 60, 120, 180, 240, 300, 360ms, total 420ms, each 600ms, opacity 0 to 1 and 4px rise. Content is visible without script. Reduced motion: no animation, transitions 1ms.
+Hash routes, no framework: #/borrow (default), #/loans, #/loan/:id, #/lend, #/limits. Each screen has empty, loading, populated and error states as in design/surfaces.md. A banner on every screen: "Regtest, no real funds."
+
+- Borrow: left, ticket form (ZEC amount input, term select 30 days fixed, button "Request this loan"). Live lines from src/money.mjs and src/defaults.mjs: you can borrow up to, loan to value, liquidation price, interest at 10% APR, total to repay. Right, stub panel "What the chain shows" with fee 10,000 zat, transparent in 0, transparent out 0, Ironwood actions 2, and the list of public fields from site/gate1-viewer-fields.json. Price: try a live read, else the last stored close, labelled with its date.
+- Loans: table of the three regtest runs with state, signers, paid amounts and a stub line each.
+- Loan: state timeline, who signs each ending, what a public viewer sees and what stays public. Unknown id shows "No such loan" and a link back.
+- Lend: what the lender funds, earns, and cannot sign alone.
+- Limits: the honesty table from README, the back-test (336 loans, 11% liquidated, 0 bad debt), the verify commands. No stub on this screen.
 
 ## Copy
 
-Verbatim from site/index.html: the three party cards, the receipt fields, the three endings with amounts 99,990,000 / 93,328,625 and 6,641,375 / 99,990,000 zat, the public list, the back-test (336 loans, 11%, 0 bad debt), the seven limits, and the verify block. Buttons: "Verify it yourself" (primary), "Read the limits" (link beside it).
+Amounts verbatim: repay borrower +99,990,000 zat; default lender +93,328,625 and borrower +6,641,375 zat; abort borrower +99,990,000 zat. Limits verbatim from README "What this does not hide or stop". Never the word anonymous. Say what is hidden (amounts and addresses on the lock) and what is not (the stablecoin leg, the keeper's price, any 2 of 3 keys can spend).
 
 ## Deviations
 
-- Motion table is CSS only, no script, so a background tab never shows a blank page.
-- No dark theme: one light ground, see direction Ground.
+- Plain HTML, CSS and ES modules instead of the skill default Svelte + Vite: src/money.mjs and src/defaults.mjs run unchanged in the browser through site/lib/ copies, a test checks the copies are byte-identical to src/, and the published folder stays small with no build step.
+- Geist is served from site/fonts/, not a CDN, so there is no third-party request.
+- Live price is best effort; the stored close is the labelled fallback.
 
 ## Output contract
 
-Files: site/index.html (inline CSS, no script), site/gate1-viewer-fields.json. No frameworks, no build step, no images, no fonts, no analytics, no third-party URLs. Do not add a section, a testimonial, a logo strip or a metric that is not in the repo.
+Files: site/index.html, site/app.css, site/app.js, site/lib/*.mjs, site/fonts/*.woff2, site/gate1-viewer-fields.json. No framework, no build step, no analytics, no third-party URLs, no screenshots. Do not add a section, testimonial, logo strip or metric that is not in the repo.
+
+## Setup
+
+- Geist variable WOFF2 from the Geist font package on npm (5 minutes), copied into site/fonts/. No keys, accounts or env vars.
 
 ## Failure modes
 
-- The word anonymous appearing anywhere. Say what is hidden and what is not.
+- The word anonymous anywhere.
 - A privacy claim without the field list next to it.
-- Limits moved below the verify block or shrunk to small print.
+- Limits hidden below small print or missing from the nav.
 - A raw hex outside :root.
 - Sideways scroll at 390px.
+- Content hidden if script fails: the entrance only animates, content is visible by default.
 
 ## Acceptance
 
-- Layout line and headline above equal direction.md.
-- bash ~/System/scripts/brief-check.sh design/build-brief.md prints decides.
-- bash ~/.claude/skills/design/scripts/design-check.sh . http://localhost:5173 exits 0.
-- Primary button fully inside the first viewport at 1440x900, 390x844 and 1280x720.
-- Main reading text at least 16px at 1280x720.
-- grep -ci anonymous site/index.html prints 0.
-- Not one word of copy, one colour or one URL differs from this brief.
+- [ ] Layout line and headline above equal direction.md.
+- [ ] bash ~/System/scripts/brief-check.sh design/build-brief.md prints decides.
+- [ ] bash ~/.claude/skills/design/scripts/design-check.sh . http://localhost:5173 exits 0.
+- [ ] Primary button fully inside the first viewport at 1440x900, 390x844 and 1280x720.
+- [ ] Main reading text at least 14px at 1440 and 390, 16px at 1280x720; inputs 16px.
+- [ ] node --test test/ passes, including the site/lib copies matching src/.
+- [ ] grep -ci anonymous site/index.html site/app.js prints 0.
+- [ ] Not one word of copy, one colour or one URL differs from this brief.
