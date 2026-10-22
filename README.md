@@ -1,5 +1,7 @@
 # Trove
 
+![tests: 47 pass](https://img.shields.io/badge/npm%20test-47%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
+
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
 
 Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; not run on public testnet; not audited.
@@ -8,7 +10,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 42 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 47 pass, 0 fail | tested |
 | Lock, repay, default and abort move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -38,17 +40,15 @@ node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 
 Chain runs need the local regtest stack (zebrad, zainod, frost-zcash-demo built under `spike/`, which is not committed); see `spike-scripts/gate2-setup.sh` then `node scripts/lifecycle.mjs A`. Expected: A ends `closed_repaid` with the borrower +99990000 zat, B ends `closed_defaulted` (lender +93328625, borrower +6641375), C ends `closed_aborted` with the borrower +99990000. Those are the numbers from the 2026-10-22 runs.
 
-## Layout
+## Project layout
 
 ```
-src/money.mjs         integer money math (rounds against the borrower where it must)
-src/loan.mjs          pure state machine: step(loan, event) -> loan + release effects
-src/signed-price.mjs  keeper-signed price readings (ed25519)
-src/keeper.mjs        multi-source price read with spread check
-src/defaults.mjs      40/70 limits from the back-test
-scripts/              lifecycle driver, back-test
-spike-scripts/        regtest setup, lock, 2-of-3 release
-data/                 365 days of ZEC/USD
+trove/
+├── src/       loan rules, BigInt money maths, signed keeper price
+├── scripts/   lifecycle.mjs (regtest runs A, B, C), backtest.mjs
+├── site/      the app: Borrow, Loans, Lend, Limits (static, no build step)
+├── test/      unit and random-sequence stress tests
+├── docs/      gate1-viewer-fields.json, what a chain viewer sees
+├── design/    audience, judge, direction and build brief
+└── company/   THESIS.md
 ```
-
-MIT licensed.
