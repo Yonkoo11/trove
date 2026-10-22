@@ -1,10 +1,9 @@
 import { collateralValue, interestDue, ltvBps, ZAT_PER_ZEC } from './lib/money.mjs';
 import { DEFAULT_LIMITS } from './lib/defaults.mjs';
+import { TERM_S, REGTEST, interestMicro, buildTerms } from './lib/terms.mjs';
 
 const NAME = 'Trove';
-const TERM_S = 2_592_000n;
 const STORED = { micro: 1_240_743_930n, label: 'Last stored close, 22 Oct 2026' };
-const REGTEST = { graceSeconds: 86400, fundWindow: 3600, payWindow: 3600, maxPriceAge: 600 };
 
 const RUNS = {
   A: { id: 'A', name: 'Repaid on time', tag: 'Repaid', good: true, signers: 'borrower + lender',
@@ -16,6 +15,9 @@ const RUNS = {
   C: { id: 'C', name: 'Aborted before funding', tag: 'Aborted', good: false, signers: 'borrower + keeper',
     paid: [['Borrower', 99_990_000]], path: ['proposed', 'collateral_locked', 'aborted', 'closed_aborted'],
     end: 'The lender never paid, so the borrower and keeper sign the collateral back.' },
+  D: { id: 'D', name: 'Late deposit refunded', tag: 'Aborted', good: false, signers: 'borrower + keeper',
+    paid: [['Borrower', 99_990_000]], path: ['proposed', 'deposit_seen', 'refund_deposit', 'closed_aborted'],
+    end: 'The collateral arrived after the funding window, so the rules refused the loan and the borrower and keeper sign it back.' },
 };
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -67,7 +69,7 @@ function stubPanel() {
   const box = h('aside', { class: 'stub', 'aria-label': 'What the chain shows' });
   const draw = () => {
     box.replaceChildren(h('h2', {}, 'What the chain shows'),
-      h('p', { class: 'sub' }, 'A public viewer looking at the lock transaction.'));
+      h('p', { class: 'sub' }, 'A public viewer looking at a vault release.'));
     if (gate1.status === 'loading') { box.append(h('p', {}, 'Loading the recorded fields…')); return; }
     if (gate1.status === 'error') { box.append(h('p', { class: 'error' }, 'Could not load gate1-viewer-fields.json.')); return; }
     const d = gate1.data;
@@ -81,7 +83,7 @@ function stubPanel() {
     for (const [k, v] of rows) dl.append(h('div', { class: 'row' }, h('dt', {}, k), h('span', { class: 'lead-dots' }), h('dd', {}, v)));
     box.append(dl, h('p', { class: 'label' }, 'Public fields on each action'),
       h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f))),
-      h('p', { class: 'note' }, `Checked on one transaction: ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Amounts and addresses on the lock are not among the fields. The stablecoin leg is on another chain and is public.`));
+      h('p', { class: 'note' }, `Checked on one transaction: ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. This is a release from the vault (lender and keeper signed), not the deposit; no deposit transaction is shown. Amounts and addresses are not among these fields. The stablecoin leg is on another chain and is public.`));
   };
   gateListeners.add(draw); draw();
   return box;
@@ -94,8 +96,8 @@ function quote(zecStr, borrowStr) {
   const value = collateralValue(zat, price.micro);
   const maxMicro = value * BigInt(DEFAULT_LIMITS.maxStartLtvBps) / 10_000n;
   const maxCents = maxMicro / 10_000n;
-  let cents = maxCents;
-  if (borrowStr.trim() !== '') {
+  let cents;
+  {
     const c = parseUnits(borrowStr, 2);
     if (c === null) return { error: 'Enter a dollar amount, up to 2 decimals.' };
     cents = c;
@@ -103,18 +105,19 @@ function quote(zecStr, borrowStr) {
   if (cents === 0n) return { error: 'That ZEC amount is too small to borrow against.' };
   if (cents > maxCents) return { error: `At most ${usd(maxCents * 10_000n)} can be borrowed against ${zecStr.trim()} ZEC at the ${DEFAULT_LIMITS.maxStartLtvBps / 100}% opening limit.` };
   const principal = cents * 10_000n;
-  const interest = (interestDue(principal, BigInt(DEFAULT_LIMITS.aprBps), TERM_S) / 10_000n + 1n) * 10_000n;
+  const interest = interestMicro(principal);
   const liq = (principal * ZAT_PER_ZEC * 10_000n + BigInt(DEFAULT_LIMITS.liqLtvBps) * zat - 1n) / (BigInt(DEFAULT_LIMITS.liqLtvBps) * zat);
   return { zat, principal, maxMicro: maxCents * 10_000n, ltv: ltvBps(principal, zat, price.micro), interest, total: principal + interest, liq };
 }
 
 function borrowScreen() {
   const zec = h('input', { id: 'zec', inputmode: 'decimal', autocomplete: 'off', value: '1', 'aria-describedby': 'zec-hint' });
-  const bor = h('input', { id: 'bor', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Maximum' });
+  const bor = h('input', { id: 'bor', inputmode: 'decimal', autocomplete: 'off', value: '200', 'aria-describedby': 'bor-hint' });
   const err = h('p', { class: 'error', role: 'alert' });
   const big = h('span', { class: 'big' });
   const maxHint = h('p', { class: 'hint', id: 'zec-hint' });
   const priceNote = h('p', { class: 'small' });
+  const live = h('button', { class: 'btn quiet', type: 'button', onclick: () => { live.disabled = true; loadPrice(); } }, 'Use live price (your browser asks CoinGecko)');
   const lines = h('ul', { class: 'lines' });
   const say = h('div', { class: 'say' });
   const terms = h('div', { class: 'terms', hidden: '' });
@@ -149,17 +152,13 @@ function borrowScreen() {
 
   btn.addEventListener('click', () => {
     if (!q || q.error !== undefined) return;
-    const t = {
-      collateralZat: q.zat.toString(), principalMicroUsd: q.principal.toString(), aprBps: DEFAULT_LIMITS.aprBps,
-      maxStartLtvBps: DEFAULT_LIMITS.maxStartLtvBps, liqLtvBps: DEFAULT_LIMITS.liqLtvBps, penaltyBps: DEFAULT_LIMITS.penaltyBps,
-      termSeconds: Number(TERM_S), ...REGTEST,
-    };
+    const t = buildTerms(q.zat, q.principal);
     const text = JSON.stringify(t, null, 2);
     const copy = h('button', { class: 'btn quiet', type: 'button', onclick: async () => {
       try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied'; } catch { copy.textContent = 'Copy failed, select the text'; }
     } }, 'Copy terms');
     terms.replaceChildren(h('p', { class: 'label' }, 'Loan terms'), h('pre', {}, text), copy,
-      h('p', { class: 'small' }, 'Regtest build: nothing was sent.'));
+      h('p', { class: 'small' }, 'Regtest build: nothing was sent. Next, a lender reads these terms and the keeper’s public key is added before the loan opens.'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
@@ -168,11 +167,11 @@ function borrowScreen() {
 
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
-    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD'))),
+    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')), h('p', { class: 'hint', id: 'bor-hint' }, 'Public on the other chain; it bounds your collateral.')),
     h('div', { class: 'field' }, h('span', {}, 'Term'), h('p', {}, '30 days, fixed')),
     err,
     h('div', { class: 'result' }, h('span', { class: 'label' }, 'You receive'), big),
-    btn, terms, lines, priceNote);
+    btn, terms, lines, priceNote, live);
   update();
 
   return h('section', { class: 'screen' },
@@ -183,7 +182,7 @@ function borrowScreen() {
 
 // ---- Loans
 const zatLine = (paid) => paid.map(([who, z]) => `${who} +${fmt(z)} zat`).join(', ');
-const stubNote = 'Fee-only view checked on one lock transaction; this run’s own transaction is not stored.';
+const stubNote = 'Fee-only view checked on one vault release; each run’s own transaction is not stored.';
 
 function loansScreen() {
   const body = h('tbody');
@@ -195,7 +194,7 @@ function loansScreen() {
       h('td', { 'data-label': 'Paid out' }, zatLine(r.paid))));
   }
   return h('section', { class: 'screen' }, h('h1', {}, 'Loans'),
-    h('p', { class: 'lead' }, 'Three runs on a local test chain. No real funds moved.'),
+    h('p', { class: 'lead' }, 'Four runs on a local test chain. No real funds moved.'),
     h('div', { class: 'panel' }, h('table', {},
       h('thead', {}, h('tr', {}, ['Run', 'State', 'Signers', 'Paid out'].map((c) => h('th', {}, c)))), body)),
     h('p', { class: 'small say' }, stubNote));
@@ -212,7 +211,7 @@ function loanScreen(id) {
       h('div', { class: 'stack' },
         h('div', { class: 'panel' }, h('h3', {}, 'Paid out'), h('p', {}, zatLine(r.paid))),
         h('div', { class: 'panel' }, h('h3', {}, 'What stays public'),
-          h('p', {}, 'The stablecoin leg on the other chain, and the keeper’s price reading. The lock hides amounts and addresses.'))),
+          h('p', {}, 'The stablecoin leg on the other chain, and the keeper’s price reading. The vault release hides amounts and addresses. The loan amount in dollars is public, and with the price it bounds the collateral.'))),
       stubPanel()));
 }
 
@@ -226,8 +225,7 @@ function lendScreen() {
     if (c === null || c === 0n) { err.textContent = amt.value.trim() ? 'Enter a dollar amount, up to 2 decimals.' : ''; out.textContent = ''; return; }
     err.textContent = '';
     const p = c * 10_000n;
-    const i = (interestDue(p, BigInt(DEFAULT_LIMITS.aprBps), TERM_S) / 10_000n) * 10_000n;
-    out.textContent = `Fund ${usd(p)} and earn about ${usd(i)} over 30 days at ${DEFAULT_LIMITS.aprBps / 100}% APR if the loan is repaid.`;
+    out.textContent = `Fund ${usd(p)} and earn ${usd(interestMicro(p))} over 30 days at ${DEFAULT_LIMITS.aprBps / 100}% APR if the loan is repaid.`;
   };
   amt.addEventListener('input', update);
   const el = h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
@@ -254,6 +252,10 @@ function limitsScreen() {
     'Who may sign a release is rules in this software, not rules enforced by Zcash.',
     'The signing libraries are unaudited and the demo client is marked not for production.',
     'This depends on an unmerged Orchard fork (zcash/orchard#475).',
+    'The dollar amount you borrow is public on the other chain. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
+    'On regtest one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
+    'The keeper learns loan ids and when each step happens.',
+    'Built in the Zecathon window: the regtest runs are dated 20 and 22 Oct 2026.',
     'Regtest only. No public testnet run yet.',
   ];
   return h('section', { class: 'screen' }, h('h1', {}, 'Limits'),
@@ -286,4 +288,3 @@ function route() {
 $('#brand').textContent = NAME;
 window.addEventListener('hashchange', route);
 route();
-loadPrice();
