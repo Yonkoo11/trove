@@ -15,7 +15,7 @@ const terms = () => ({
 const rd = (loanId, price, ts) => signReading({ loanId, priceMicroUsd: BigInt(price), ts, source: 't' }, key.privateKeyPem);
 const fresh = () => openLoan({ id: 'L1', createdAt: T0, terms: terms() });
 const locked = () => step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: 10n * ZAT_PER_ZEC, txid: 'a' }).loan;
-const active = () => step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', reading: rd('L1', 50_000_000, T0 + 90) }).loan;
+const active = () => step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 200_000_000n, reading: rd('L1', 50_000_000, T0 + 90) }).loan;
 const throwsMsg = (f, re) => assert.throws(f, re);
 
 test('happy path: repay releases to borrower, signed by borrower+lender', () => {
@@ -32,7 +32,7 @@ test('underpayment rejected', () => {
   throwsMsg(() => step(a, { type: 'repaid', at: T0 + 100 + 86400, amount: a.terms.principal, ref: 'r' }), /below the debt/);
 });
 test('opening LTV above limit rejected', () => {
-  throwsMsg(() => step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', reading: rd('L1', 10_000_000, T0 + 90) }), /opening LTV/);
+  throwsMsg(() => step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 200_000_000n, reading: rd('L1', 10_000_000, T0 + 90) }), /opening LTV/);
 });
 test('price trigger at the boundary defaults, one below does not', () => {
   const a = active();
@@ -111,4 +111,15 @@ test('step does not mutate its input', () => {
 test('bad terms rejected', () => {
   throwsMsg(() => openLoan({ id: 'x', createdAt: 0, terms: { ...terms(), liqLtvBps: 5000 } }), /above the opening/);
   throwsMsg(() => openLoan({ id: 'x', createdAt: 0, terms: { ...terms(), keeperPubKey: '' } }), /keeperPubKey/);
+});
+test('back-dated event time is rejected (cannot reuse an old price to dodge a default)', () => {
+  const a = active();
+  const seen = step(a, { type: 'price', at: T0 + 1000, reading: rd('L1', 50_000_000, T0 + 995) }).loan;
+  throwsMsg(() => step(seen, { type: 'price', at: T0 + 500, reading: rd('L1', 20_000_000, T0 + 499) }), /earlier than the last/);
+  throwsMsg(() => step(seen, { type: 'repaid', at: T0 + 101, amount: 10n ** 12n, ref: 'r' }), /earlier than the last/);
+});
+test('loan payment below principal or without amount rejected', () => {
+  const ev = { type: 'loanPaid', at: T0 + 100, ref: 'p', reading: rd('L1', 50_000_000, T0 + 90) };
+  throwsMsg(() => step(locked(), ev), /below the principal/);
+  throwsMsg(() => step(locked(), { ...ev, amount: 199_999_999n }), /below the principal/);
 });

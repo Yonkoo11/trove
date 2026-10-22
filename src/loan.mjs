@@ -17,7 +17,7 @@ export function openLoan({ id, createdAt, terms }) {
   if (!t.keeperPubKey) fail('terms.keeperPubKey missing');
   if (t.liqLtvBps <= t.maxStartLtvBps) fail('liquidation line must sit above the opening limit');
   if (t.principal <= 0n || t.collateralZat <= 0n) fail('amounts must be positive');
-  return { id, terms: t, state: 'proposed', createdAt: BigInt(createdAt), lastPriceTs: 0n, history: [] };
+  return { id, terms: t, state: 'proposed', createdAt: BigInt(createdAt), lastPriceTs: 0n, lastAt: BigInt(createdAt), history: [] };
 }
 
 export function debtAt(loan, at) {
@@ -67,17 +67,18 @@ const handlers = {
   loanPaid(loan, ev) {
     need(loan, 'collateral_locked');
     if (BigInt(ev.at) > loan.lockedAt + loan.terms.payWindow) fail('loan payment arrived after the pay window');
+    if (ev.amount === undefined || BigInt(ev.amount) < loan.terms.principal) fail('loan payment is below the principal');
     const price = checkReading(loan, ev.reading, ev.at);
     const ltv = ltvBps(loan.terms.principal, loan.terms.collateralZat, price);
     if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
-    const next = mark(loan, 'active', ev, { activeAt: BigInt(ev.at), dueAt: BigInt(ev.at) + loan.terms.termSeconds, payRef: ev.ref, lastPriceTs: BigInt(ev.reading.ts) });
+    const next = mark(loan, 'active', ev, { activeAt: BigInt(ev.at), dueAt: BigInt(ev.at) + loan.terms.termSeconds, payRef: ev.ref, paidAmount: BigInt(ev.amount), lastPriceTs: BigInt(ev.reading.ts) });
     return { loan: next, effects: [] };
   },
   repaid(loan, ev) {
     need(loan, 'active');
     const due = debtAt(loan, ev.at);
     if (BigInt(ev.amount) < due) fail(`repayment ${ev.amount} is below the debt ${due}`);
-    const next = mark(loan, 'repaid', ev, { repayRef: ev.ref, repaidDebt: due });
+    const next = mark(loan, 'repaid', ev, { repayRef: ev.ref, paidAmount: BigInt(ev.amount), repaidDebt: due });
     return { loan: next, effects: [release('borrower', ['borrower', 'lender'], { zat: loan.terms.collateralZat })] };
   },
   price(loan, ev) {
@@ -111,5 +112,8 @@ export function step(loan, ev) {
   const h = handlers[ev.type];
   if (!h) fail(`unknown event ${ev.type}`);
   if (ev.at === undefined) fail('event needs a time (at)');
-  return h(loan, ev);
+  // Time comes from the driver's trusted clock or block time, never from a party, and may only move forward.
+  if (BigInt(ev.at) < loan.lastAt) fail('event time is earlier than the last accepted event');
+  const out = h(loan, ev);
+  return { ...out, loan: { ...out.loan, lastAt: BigInt(ev.at) } };
 }
