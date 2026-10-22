@@ -144,7 +144,7 @@ main { outline: none; }
 }
 @media (hover: hover) { .btn:hover { filter: brightness(0.95); } }
 .btn[disabled] { background: var(--rule); color: var(--muted); cursor: not-allowed; filter: none; }
-.btn.quiet { background: var(--paper); border: 1px solid var(--rule); width: auto; padding: 8px 12px; font-size: 14px; line-height: 20px; }
+.btn.quiet { background: var(--paper); border: 1px solid var(--rule); width: auto; min-height: 44px; padding: 8px 12px; font-size: 14px; line-height: 20px; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 .lines { margin: 24px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
