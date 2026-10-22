@@ -1,4 +1,4 @@
-# Build brief: Shielded Lend, the borrow app
+# Build brief: Trove, the borrow app
 
 Every number here is a decision. Where a value is given, use it exactly. Where copy is given, use it verbatim. Read the whole brief before writing a line.
 
@@ -10,7 +10,7 @@ Layout: top nav (name, Borrow, Loans, Lend, Limits) then, on Borrow, the loan ti
 
 Headline (verbatim, h1 on Borrow): Borrow dollars against your ZEC, with the collateral held in a shielded vault.
 
-Product name is one constant, NAME in site/app.js, value "Shielded Lend". The owner may change it; no other file hard-codes it.
+Product name is one constant, NAME in site/app.js, value "Trove". The owner may change it; no other file hard-codes it.
 
 ## Tokens
 

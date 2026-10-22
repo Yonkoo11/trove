@@ -9,7 +9,7 @@ Density row: DeFi
 Density reason: The user is quoting and comparing a loan (numbers, a table of loans, a form) like a Morpho or Kamino user, so the first screen is the working borrow form with live numbers, as Uniswap puts the swap form there.
 Device: laptop, because a Zecathon judge opens the live link or watches a 1280x720 video; the phone is checked but secondary.
 Artifact type: product app, the borrower prices and requests a loan on the first screen.
-Brand origin: none, there is no existing mark or palette for Shielded Lend.
+Brand origin: none, there is no existing mark or palette for Trove.
 Anchor asset: site/gate1-viewer-fields.json
 Anchor rung: 1 found in the product, the real field list of the regtest lock transaction (docs/gate1-viewer-fields.json), printed as a receipt
 Anchor provenance: produced by running a lender+keeper signed spend on the local regtest chain on 2026-10-20 and reading the transaction as a public viewer; file copied from docs/gate1-viewer-fields.json; no image, the receipt is set in type.

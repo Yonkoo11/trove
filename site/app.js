@@ -1,7 +1,7 @@
 import { collateralValue, interestDue, ltvBps, ZAT_PER_ZEC } from './lib/money.mjs';
 import { DEFAULT_LIMITS } from './lib/defaults.mjs';
 
-const NAME = 'Shielded Lend';
+const NAME = 'Trove';
 const TERM_S = 2_592_000n;
 const STORED = { micro: 1_240_743_930n, label: 'Last stored close, 22 Oct 2026' };
 const REGTEST = { graceSeconds: 86400, fundWindow: 3600, payWindow: 3600, maxPriceAge: 600 };

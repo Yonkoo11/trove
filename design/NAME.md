@@ -11,5 +11,5 @@ Finalists (name-check.py run 2026-10-22, web search per finalist):
 - Sealed: vault, closed envelope. No clash found; Ghost Finance and SiennaLend are private lenders under other names.
 - Killed: Trove (Liquity calls its debt positions Troves), Quorum (ConsenSys Quorum), Triad (Triadmarkets), Tripod (weak), Plinth (Cardano language), Ballast, Gild, Kiln, Dock, Harbor, Keel, Stash, Veil, Cloak.
 
-Pick: Trine. Runner-up: Sealed.
+Owner pick (2026-10-22): Trove. Known clash: Liquity calls its loan positions "Troves"; owner chose it knowingly.
 Unverified: trademark, social handles, domains (all plain words are taken on com/io/app/xyz; pick a variant). Owner decides; NAME in site/app.js stays "Shielded Lend" until then.
