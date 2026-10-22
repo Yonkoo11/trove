@@ -47,4 +47,4 @@ Option 3: These are the real fields a public viewer reads from a Shielded Lend l
 Picked: 1
 Picked by: model
 Headline: picked by model, needs owner
-Brief hash: d8e862f377aa80f4
+Brief hash: 35a4b68c5518eb48
