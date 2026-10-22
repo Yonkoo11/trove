@@ -6,7 +6,7 @@ import { newKeeperKey, signReading } from '../src/signed-price.mjs';
 import { openLoan, step } from '../src/loan.mjs';
 
 const FEE = 10_000n;
-const sh = (script, ...args) => execFileSync('bash', [`spike-scripts/${script}`, ...args], { encoding: 'utf8', timeout: 400_000 });
+const sh = (script, ...args) => execFileSync('bash', [`spike-scripts/${script}`, ...args], { encoding: 'utf8', timeout: 400_000, stdio: ['ignore', 'pipe', 'inherit'] });
 const bal = (w) => {
   const out = execFileSync('bash', ['-c', `source spike-scripts/lib.sh; wsync ${w}; $DT wallet -w $W/wallets/${w} balance --min-confirmations 1 2>&1`], { encoding: 'utf8' });
   return BigInt(Math.round(parseFloat(out.match(/^\s*Balance:\s+([\d.]+)/m)[1]) * 1e8));
