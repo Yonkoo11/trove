@@ -17,3 +17,4 @@ Not on a screen because there is no data: mainnet or testnet loans, live on-chai
 - Loans: populated only; each row says "regtest run" so nothing reads as a live loan.
 - Loan detail: unknown id shows "No such loan" with a link back to Loans.
 - Lend, Limits: static.
+- Working surface: Borrow, the loan ticket form with live cost lines (site/app.js, route #/borrow).

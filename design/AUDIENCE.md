@@ -8,6 +8,7 @@ Data on screen: Collateral in ZEC, max dollars borrowable, LTV, liquidation pric
 Density row: DeFi
 Density reason: The user is quoting and comparing a loan (numbers, a table of loans, a form) like a Morpho or Kamino user, so the first screen is the working borrow form with live numbers, as Uniswap puts the swap form there.
 Device: laptop, because a Zecathon judge opens the live link or watches a 1280x720 video; the phone is checked but secondary.
+Artifact type: product app, the borrower prices and requests a loan on the first screen.
 Brand origin: none, there is no existing mark or palette for Shielded Lend.
 Anchor asset: site/gate1-viewer-fields.json
 Anchor rung: 1 found in the product, the real field list of the regtest lock transaction (docs/gate1-viewer-fields.json), printed as a receipt
