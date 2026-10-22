@@ -142,3 +142,35 @@ test('nonsense terms rejected', () => {
   const bad = (o) => throwsMsg(() => openLoan({ id: 'X', createdAt: T0, terms: { ...terms(), ...o } }), /./);
   bad({ liqLtvBps: 12000 }); bad({ termSeconds: -1 }); bad({ aprBps: -5 }); bad({ penaltyBps: -1 }); bad({ maxPriceAge: 0 });
 });
+
+import { LoanBook } from '../src/loan.mjs';
+test('A2: a late deposit is refunded in full to the borrower, signed by borrower+keeper', () => {
+  const f = fresh();
+  throwsMsg(() => step(f, { type: 'collateralLocked', at: T0 + 7200, zat: 10n * ZAT_PER_ZEC, txid: 'late', reading: rd('L1', 50_000_000, T0 + 7190) }), /funding window/);
+  const { loan, effects } = step(f, { type: 'refundDeposit', at: T0 + 7200, zat: 10n * ZAT_PER_ZEC, txid: 'late' });
+  assert.equal(loan.state, 'aborted');
+  assert.equal(effects[0].zat, 10n * ZAT_PER_ZEC);
+  assert.deepEqual(effects[0].signers, ['borrower', 'keeper']);
+  assert.equal(step(loan, { type: 'releaseConfirmed', at: T0 + 7300, txid: 'x' }).loan.state, 'closed_aborted');
+});
+test('A2: a short deposit is refunded for the amount actually sent', () => {
+  const { effects } = step(fresh(), { type: 'refundDeposit', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 's' });
+  assert.equal(effects[0].zat, 3n * ZAT_PER_ZEC);
+});
+test('A2: a refund is refused once the loan is open', () => {
+  throwsMsg(() => step(locked(), { type: 'refundDeposit', at: T0 + 20, zat: 10n * ZAT_PER_ZEC, txid: 'z' }), /cannot do this/);
+});
+test('A3: over-locked collateral comes back on repay, abort and default', () => {
+  const extra = 12n * ZAT_PER_ZEC;
+  const l = step(fresh(), { type: 'collateralLocked', at: T0 + 10, zat: extra, txid: 'a', reading: rd('L1', 50_000_000, T0 + 5) }).loan;
+  assert.equal(step(l, { type: 'tick', at: T0 + 10 + 3601 }).effects[0].zat, extra);
+  const a = step(l, { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 200_000_000n, reading: rd('L1', 50_000_000, T0 + 90) }).loan;
+  assert.equal(step(a, { type: 'repaid', at: T0 + 200, amount: debtAt(a, T0 + 200), ref: 'r' }).effects[0].zat, extra);
+  const d = step(a, { type: 'price', at: T0 + 200, reading: rd('L1', 1_000_000, T0 + 195) });
+  assert.equal(d.loan.settlement.lenderZat + d.loan.settlement.borrowerZat, extra);
+});
+test('A9: a loan id cannot be opened twice', () => {
+  const book = new LoanBook();
+  book.open({ id: 'L1', createdAt: T0, terms: terms() });
+  throwsMsg(() => book.open({ id: 'L1', createdAt: T0, terms: terms() }), /already exists/);
+});

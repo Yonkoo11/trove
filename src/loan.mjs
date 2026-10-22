@@ -46,10 +46,11 @@ function checkReading(loan, r, at) {
 /** On default the lender is made whole (debt + penalty, priced at the signed reading); the rest goes back to the borrower. */
 export function settleDefault(loan, at, priceMicroUsd) {
   const owed = debtAt(loan, at) * (10_000n + loan.terms.penaltyBps) / 10_000n;
+  const vault = loan.vaultZat ?? loan.terms.collateralZat;
   const lenderWanted = (owed * ZAT_PER_ZEC + priceMicroUsd - 1n) / priceMicroUsd;
-  const lenderZat = lenderWanted > loan.terms.collateralZat ? loan.terms.collateralZat : lenderWanted;
+  const lenderZat = lenderWanted > vault ? vault : lenderWanted;
   const covered = collateralValue(lenderZat, priceMicroUsd);
-  return { lenderZat, borrowerZat: loan.terms.collateralZat - lenderZat, shortfallMicroUsd: owed > covered ? owed - covered : 0n };
+  return { lenderZat, borrowerZat: vault - lenderZat, shortfallMicroUsd: owed > covered ? owed - covered : 0n };
 }
 
 const release = (to, signers, extra = {}) => ({ type: 'release', to, signers, ...extra });
@@ -70,7 +71,13 @@ const handlers = {
     const price = checkReading(loan, ev.reading, ev.at);
     const ltv = ltvBps(loan.terms.principal, loan.terms.collateralZat, price);
     if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
-    return { loan: mark(loan, 'collateral_locked', ev, { lockedAt: BigInt(ev.at), lockTx: ev.txid, lastPriceTs: BigInt(ev.reading.ts) }), effects: [{ type: 'ask-lender-to-pay' }] };
+    return { loan: mark(loan, 'collateral_locked', ev, { vaultZat: BigInt(ev.zat), lockedAt: BigInt(ev.at), lockTx: ev.txid, lastPriceTs: BigInt(ev.reading.ts) }), effects: [{ type: 'ask-lender-to-pay' }] };
+  },
+  // A deposit that did not open the loan (late, short, or the lock check threw) sits in the vault: hand it back in full.
+  refundDeposit(loan, ev) {
+    need(loan, 'proposed', 'expired');
+    if (BigInt(ev.zat) <= 0n) fail('refund amount must be positive');
+    return { loan: mark(loan, 'aborted', ev, { refundZat: BigInt(ev.zat), lockTx: ev.txid }), effects: [release('borrower', ['borrower', 'keeper'], { zat: BigInt(ev.zat) })] };
   },
   loanPaid(loan, ev) {
     need(loan, 'collateral_locked');
@@ -87,7 +94,7 @@ const handlers = {
     const due = debtAt(loan, ev.at);
     if (BigInt(ev.amount) < due) fail(`repayment ${ev.amount} is below the debt ${due}`);
     const next = mark(loan, 'repaid', ev, { repayRef: ev.ref, paidAmount: BigInt(ev.amount), repaidDebt: due });
-    return { loan: next, effects: [release('borrower', ['borrower', 'lender'], { zat: loan.terms.collateralZat })] };
+    return { loan: next, effects: [release('borrower', ['borrower', 'lender'], { zat: loan.vaultZat })] };
   },
   price(loan, ev) {
     need(loan, 'active');
@@ -105,7 +112,7 @@ const handlers = {
     const at = BigInt(ev.at);
     if (loan.state === 'proposed' && at > loan.createdAt + loan.terms.fundWindow) return { loan: mark(loan, 'expired', ev), effects: [] };
     if (loan.state === 'collateral_locked' && at > loan.lockedAt + loan.terms.payWindow) {
-      return { loan: mark(loan, 'aborted', ev), effects: [release('borrower', ['borrower', 'keeper'], { zat: loan.terms.collateralZat })] };
+      return { loan: mark(loan, 'aborted', ev), effects: [release('borrower', ['borrower', 'keeper'], { zat: loan.vaultZat })] };
     }
     return { loan, effects: [] };
   },
@@ -131,4 +138,15 @@ export function step(loan, ev) {
   if (BigInt(ev.at) < loan.lastAt) fail('event time is earlier than the last accepted event');
   const out = h(loan, ev);
   return { ...out, loan: { ...out.loan, lastAt: BigInt(ev.at) } };
+}
+
+/** Readings are bound to a loan id, so two loans sharing an id would share readings. The book refuses a repeat. */
+export class LoanBook {
+  #loans = new Map();
+  open(args) {
+    if (this.#loans.has(args.id)) fail(`loan ${args.id} already exists`);
+    const loan = openLoan(args);
+    this.#loans.set(args.id, loan);
+    return loan;
+  }
 }

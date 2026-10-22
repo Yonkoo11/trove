@@ -8,7 +8,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Claim | Evidence | State |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 35 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 40 pass, 0 fail | tested |
 | Lock, repay, default and abort move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `ai/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -23,12 +23,13 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 - **The price is the keeper's reading.** Median of at least two keyless sources (CoinGecko live; Coinbase and Kraken parsers tested only against sample replies), signed with ed25519, not verified on-chain.
 - **The FROST crates are unaudited** and the demo tool is marked "not for production". The orchard fork with FROST support (`unstable-frost`, zcash/orchard#475) is unmerged.
 - **Event time is supplied by the driver.** The rules trust it to come from a trusted clock or block time.
-- Not handled yet: late or short deposits stuck in the vault, over-locked collateral, one shared vault across many loans, duplicate loan ids (attacker findings A2, A3, A7, A9).
+- Fixed in the rules and unit-tested, not re-run on chain: late or short deposits are refunded in full (`refundDeposit`), over-locked collateral is returned in full, duplicate loan ids are refused by `LoanBook` (findings A2, A3, A9).
+- Still open: a lender can hold back a newer price and submit an older one that is still fresh (A7, bounded by `maxPriceAge`); a lender who pays more than the principal is not refunded the extra; one shared vault wallet serves every loan on regtest.
 
 ## Verify it yourself
 
 ```
-npm test                         # 35 pass, 0 fail
+npm test                         # 40 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 ```
 
