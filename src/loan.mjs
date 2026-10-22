@@ -70,7 +70,7 @@ const handlers = {
     const price = checkReading(loan, ev.reading, ev.at);
     const ltv = ltvBps(loan.terms.principal, loan.terms.collateralZat, price);
     if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
-    return { loan: mark(loan, 'collateral_locked', ev, { lockedAt: BigInt(ev.at), lockTx: ev.txid }), effects: [{ type: 'ask-lender-to-pay' }] };
+    return { loan: mark(loan, 'collateral_locked', ev, { lockedAt: BigInt(ev.at), lockTx: ev.txid, lastPriceTs: BigInt(ev.reading.ts) }), effects: [{ type: 'ask-lender-to-pay' }] };
   },
   loanPaid(loan, ev) {
     need(loan, 'collateral_locked');

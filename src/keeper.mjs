@@ -32,11 +32,16 @@ export async function readPrice({ sources = SOURCES, fetchFn = fetch, minSources
   const settled = await Promise.allSettled(Object.entries(sources).map(async ([name, fn]) => [name, await fn(fetchFn)]));
   const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value).filter(([, p]) => p > 0n);
   if (ok.length < minSources) throw new Error(`only ${ok.length} price source(s) answered, need ${minSources}`);
-  const first = median(ok.map(([, p]) => p));
-  const dev = (p, m) => (p > m ? p - m : m - p) * 10_000n / m;
-  // one off-market source (thin book, bad feed) is dropped, it cannot stop the keeper; too few agreeing sources refuse
-  const agree = ok.filter(([, p]) => dev(p, first) <= maxDevBps);
-  if (agree.length < minSources) throw new Error(`sources disagree: ${agree.length} within ${maxDevBps} bps of the median, need ${minSources}, refusing to sign`);
+  const spreadOk = (ps) => { const lo = ps.reduce((a, b) => (b < a ? b : a)), hi = ps.reduce((a, b) => (b > a ? b : a)); return (hi - lo) * 10_000n <= maxDevBps * lo; };
+  // every answering source must sit within maxDevBps of each other; with 3 or more answering, a lone off-market
+  // source (thin book, bad feed) is dropped so it cannot stop the keeper, but the rest must still agree with each other
+  let agree = ok;
+  if (!spreadOk(ok.map(([, p]) => p))) {
+    const first = median(ok.map(([, p]) => p));
+    const near = (p) => (p > first ? p - first : first - p) * 10_000n <= maxDevBps * first;
+    agree = ok.length >= 3 ? ok.filter(([, p]) => near(p)) : [];
+    if (agree.length < Math.max(minSources, 2) || !spreadOk(agree.map(([, p]) => p))) throw new Error(`sources disagree by more than ${maxDevBps} bps, refusing to sign`);
+  }
   const med = median(agree.map(([, p]) => p));
   return { priceMicroUsd: med, source: agree.map(([n]) => n).sort().join('+') };
 }

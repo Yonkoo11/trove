@@ -44,3 +44,8 @@ test('live-source parsers handle each API shape and reject garbage', async () =>
   await assert.rejects(SOURCES.coinbase(f({}, 500)), /HTTP 500/);
   await assert.rejects(SOURCES.coingecko(f({ zcash: { usd: 'abc' } })), /bad price/);
 });
+test('two sources are never trimmed: a spread beyond 3% refuses, not a biased price', async () => {
+  await assert.rejects(readPrice({ sources: { a: ok(50_000_000n), b: ok(51_600_000n) } }), /refusing to sign/);
+  const r = await readPrice({ sources: { a: ok(50_000_000n), b: ok(51_000_000n) } });
+  assert.equal(r.priceMicroUsd, 50_500_000n);
+});
