@@ -147,18 +147,27 @@ import { LoanBook } from '../src/loan.mjs';
 test('A2: a late deposit is refunded in full to the borrower, signed by borrower+keeper', () => {
   const f = fresh();
   throwsMsg(() => step(f, { type: 'collateralLocked', at: T0 + 7200, zat: 10n * ZAT_PER_ZEC, txid: 'late', reading: rd('L1', 50_000_000, T0 + 7190) }), /funding window/);
-  const { loan, effects } = step(f, { type: 'refundDeposit', at: T0 + 7200, zat: 10n * ZAT_PER_ZEC, txid: 'late' });
+  const seen = step(f, { type: 'depositSeen', at: T0 + 7200, zat: 10n * ZAT_PER_ZEC, txid: 'late' }).loan;
+  const { loan, effects } = step(seen, { type: 'refundDeposit', at: T0 + 7200, txid: 'late' });
   assert.equal(loan.state, 'aborted');
   assert.equal(effects[0].zat, 10n * ZAT_PER_ZEC);
   assert.deepEqual(effects[0].signers, ['borrower', 'keeper']);
   assert.equal(step(loan, { type: 'releaseConfirmed', at: T0 + 7300, txid: 'x' }).loan.state, 'closed_aborted');
 });
 test('A2: a short deposit is refunded for the amount actually sent', () => {
-  const { effects } = step(fresh(), { type: 'refundDeposit', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 's' });
+  const seen = step(fresh(), { type: 'depositSeen', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 's' }).loan;
+  const { effects } = step(seen, { type: 'refundDeposit', at: T0 + 10, txid: 's', zat: 99n * ZAT_PER_ZEC });
   assert.equal(effects[0].zat, 3n * ZAT_PER_ZEC);
 });
+test('A2: a refund needs a recorded deposit and ignores a caller-supplied amount', () => {
+  throwsMsg(() => step(fresh(), { type: 'refundDeposit', at: T0 + 10, txid: 'never-seen', zat: 5n * ZAT_PER_ZEC }), /no recorded deposit/);
+  const seen = step(fresh(), { type: 'depositSeen', at: T0 + 10, zat: 3n * ZAT_PER_ZEC, txid: 's' }).loan;
+  throwsMsg(() => step(seen, { type: 'depositSeen', at: T0 + 11, zat: 3n * ZAT_PER_ZEC, txid: 's' }), /already recorded/);
+  const done = step(seen, { type: 'refundDeposit', at: T0 + 12, txid: 's' }).loan;
+  throwsMsg(() => step(done, { type: 'refundDeposit', at: T0 + 13, txid: 's' }), /cannot do this/);
+});
 test('A2: a refund is refused once the loan is open', () => {
-  throwsMsg(() => step(locked(), { type: 'refundDeposit', at: T0 + 20, zat: 10n * ZAT_PER_ZEC, txid: 'z' }), /cannot do this/);
+  throwsMsg(() => step(locked(), { type: 'refundDeposit', at: T0 + 20, txid: 'z' }), /cannot do this/);
 });
 test('A3: over-locked collateral comes back on repay, abort and default', () => {
   const extra = 12n * ZAT_PER_ZEC;

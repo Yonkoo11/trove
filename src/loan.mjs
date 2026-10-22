@@ -73,11 +73,19 @@ const handlers = {
     if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
     return { loan: mark(loan, 'collateral_locked', ev, { vaultZat: BigInt(ev.zat), lockedAt: BigInt(ev.at), lockTx: ev.txid, lastPriceTs: BigInt(ev.reading.ts) }), effects: [{ type: 'ask-lender-to-pay' }] };
   },
-  // A deposit that did not open the loan (late, short, or the lock check threw) sits in the vault: hand it back in full.
+  // The driver reports every deposit it sees in the vault, whether or not it opens the loan.
+  depositSeen(loan, ev) {
+    need(loan, 'proposed', 'expired');
+    if (!ev.txid || BigInt(ev.zat) <= 0n) fail('a deposit needs a txid and a positive amount');
+    if ((loan.deposits ?? []).some((d) => d.txid === ev.txid)) fail(`deposit ${ev.txid} already recorded`);
+    return { loan: { ...loan, deposits: [...(loan.deposits ?? []), { txid: ev.txid, zat: BigInt(ev.zat) }] }, effects: [] };
+  },
+  // A deposit that did not open the loan (late, short, or the lock check threw) sits in the vault: hand back exactly what was recorded.
   refundDeposit(loan, ev) {
     need(loan, 'proposed', 'expired');
-    if (BigInt(ev.zat) <= 0n) fail('refund amount must be positive');
-    return { loan: mark(loan, 'aborted', ev, { refundZat: BigInt(ev.zat), lockTx: ev.txid }), effects: [release('borrower', ['borrower', 'keeper'], { zat: BigInt(ev.zat) })] };
+    const dep = (loan.deposits ?? []).find((d) => d.txid === ev.txid);
+    if (!dep) fail(`no recorded deposit ${ev.txid} to refund`);
+    return { loan: mark(loan, 'aborted', ev, { refundZat: dep.zat, lockTx: dep.txid }), effects: [release('borrower', ['borrower', 'keeper'], { zat: dep.zat })] };
   },
   loanPaid(loan, ev) {
     need(loan, 'collateral_locked');
