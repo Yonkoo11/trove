@@ -221,3 +221,4 @@ td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--
   *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
 }
 .stub summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--muted); }
+.row-btns { display: flex; flex-wrap: wrap; gap: 8px; }

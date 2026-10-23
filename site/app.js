@@ -1,6 +1,6 @@
 import { collateralValue, interestDue, ltvBps, ZAT_PER_ZEC } from './lib/money.mjs';
 import { DEFAULT_LIMITS } from './lib/defaults.mjs';
-import { TERM_S, REGTEST, interestMicro, buildTerms } from './lib/terms.mjs';
+import { TERM_S, REGTEST, interestMicro, buildTerms, encodeRequest, decodeRequest } from './lib/terms.mjs';
 
 const NAME = 'Trove';
 const STORED = { micro: 1_240_743_930n, label: 'Last stored close, 22 Oct 2026' };
@@ -153,13 +153,17 @@ function borrowScreen() {
 
   btn.addEventListener('click', () => {
     if (!q || q.error !== undefined) return;
-    const t = buildTerms(q.zat, q.principal);
-    const text = JSON.stringify(t, null, 2);
-    const copy = h('button', { class: 'btn quiet', type: 'button', onclick: async () => {
-      try { await navigator.clipboard.writeText(text); copy.textContent = 'Copied'; } catch { copy.textContent = 'Copy failed, select the text'; }
-    } }, 'Copy terms');
-    terms.replaceChildren(h('p', { class: 'label' }, 'Loan terms'), h('pre', {}, text), copy,
-      h('p', { class: 'small' }, 'Regtest build: nothing was sent. Next, a lender reads these terms and the keeper’s public key is added before the loan opens.'));
+    const code = encodeRequest(q.zat, q.principal);
+    const link = `${location.origin}${location.pathname}#/lend/${code}`;
+    const copyBtn = (label, text) => {
+      const b = h('button', { class: 'btn quiet', type: 'button', onclick: async () => {
+        try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; } catch { b.textContent = 'Copy failed, select the text'; }
+      } }, label);
+      return b;
+    };
+    terms.replaceChildren(h('p', { class: 'label' }, 'Your loan request'), h('pre', {}, code), 
+      h('div', { class: 'row-btns' }, copyBtn('Copy request code', code), copyBtn('Copy link for the lender', link)),
+      h('p', { class: 'small' }, 'Send this to a lender. It holds only the collateral and the dollar amount; rates and limits are the shared ones. Nothing is sent from this page, and the keeper’s key is added when the loan opens.'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
@@ -217,32 +221,50 @@ function loanScreen(id) {
 }
 
 // ---- Lend
-function lendScreen() {
-  const amt = h('input', { id: 'fund', inputmode: 'decimal', autocomplete: 'off', value: '40' });
-  const out = h('p', {});
-  const err = h('p', { class: 'error', role: 'alert' });
-  const update = () => {
-    const c = parseUnits(amt.value, 2);
-    if (c === null || c === 0n) { err.textContent = amt.value.trim() ? 'Enter a dollar amount, up to 2 decimals.' : ''; out.textContent = ''; return; }
-    err.textContent = '';
-    const p = c * 10_000n;
-    out.textContent = `Fund ${usd(p)} and earn ${usd(interestMicro(p))} over 30 days at ${DEFAULT_LIMITS.aprBps / 100}% APR if the loan is repaid.`;
+function requestPanel(code) {
+  const input = h('input', { id: 'code', autocomplete: 'off', spellcheck: 'false', value: code, placeholder: 'trove1.…' });
+  const out = h('div', {});
+  const show = () => {
+    const raw = input.value.trim();
+    if (!raw) { out.replaceChildren(); return; }
+    const r = decodeRequest(raw);
+    if (!r) { out.replaceChildren(h('p', { class: 'error', role: 'alert' }, 'That is not a Trove request code. It looks like trove1.<zatoshis>.<cents>.')); return; }
+    const t = r.terms, zecAmt = Number(r.zat) / 1e8, ltv = ltvBps(r.principal, r.zat, price.micro);
+    const interest = interestMicro(r.principal);
+    const over = ltv > BigInt(DEFAULT_LIMITS.maxStartLtvBps);
+    const liq = (r.principal * ZAT_PER_ZEC * 10_000n + BigInt(DEFAULT_LIMITS.liqLtvBps) * r.zat - 1n) / (BigInt(DEFAULT_LIMITS.liqLtvBps) * r.zat);
+    const line = (k, v) => h('li', {}, h('span', {}, k), h('span', {}, v));
+    out.replaceChildren(
+      over ? h('p', { class: 'error', role: 'alert' }, `At ${usd(price.micro)} per ZEC this request opens at ${(Number(ltv) / 100).toFixed(2)}% loan to value, above the ${DEFAULT_LIMITS.maxStartLtvBps / 100}% limit. The rules would refuse it.`) : '',
+      h('ul', { class: 'lines' },
+        line('You fund', usd(r.principal)),
+        line('Collateral locked', `${zecAmt.toLocaleString('en-US', { maximumFractionDigits: 8 })} ZEC`),
+        line('Loan to value now', `${(Number(ltv) / 100).toFixed(2)}%`),
+        line('Liquidation price', `${usd(liq)} per ZEC`),
+        line('You earn if repaid', usd(interest)),
+        line('Funding window', `${t.fundWindow / 60} minutes`)),
+      h('p', { class: 'small' }, `Price used: ${usd(price.micro)}. ${price.label}.`));
   };
-  amt.addEventListener('input', update);
+  input.addEventListener('input', show);
+  show();
+  return h('div', { class: 'panel', style: 'margin-bottom:16px' },
+    h('label', { class: 'field', for: 'code' }, h('span', {}, 'Borrower’s request code'), h('div', { class: 'input' }, input)), out);
+}
+function lendScreen(code = '') {
+  const req = requestPanel(code);
   const el = h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
     h('p', { class: 'lead' }, 'You fund a borrower in dollars and hold one of three keys to their ZEC vault.'),
+    req,
     h('div', { class: 'cols' },
       h('form', { class: 'panel', onsubmit: (e) => e.preventDefault() },
-        h('label', { class: 'field', for: 'fund' }, h('span', {}, 'You fund'), h('div', { class: 'input' }, amt, h('span', { class: 'unit' }, 'USD'))),
-        err, out, h('h3', { style: 'margin-top:16px' }, 'What happens next'),
-        h('ol', {}, h('li', {}, 'A borrower sends you their terms from the Borrow screen.'), h('li', {}, 'You check them and pay the dollars on the other chain.'), h('li', {}, 'You hold your key until the loan closes.')),
-        h('p', { class: 'small' }, 'Regtest build: there is no inbox yet, so terms are passed by hand.')),
+        h('h3', {}, 'What happens next'),
+        h('ol', {}, h('li', {}, 'A borrower sends you a request code or link from the Borrow screen.'), h('li', {}, 'You check it and pay the dollars on the other chain.'), h('li', {}, 'You hold your key until the loan closes.')),
+        h('p', { class: 'small' }, 'Regtest build: there is no inbox, so requests are passed by hand.')),
       h('div', { class: 'panel' }, h('h3', {}, 'What you can sign'),
         h('ul', {}, h('li', {}, 'Alone: nothing. A release needs two keys.'),
           h('li', {}, 'With the borrower: a repayment release.'),
           h('li', {}, 'With the keeper: a default release, after a signed price past the liquidation line or the end of the term plus grace.'),
           h('li', {}, 'You cannot stop the borrower and keeper signing an abort before you pay.')))));
-  update();
   return el;
 }
 
@@ -277,7 +299,7 @@ function route() {
   let view;
   if (name === 'loans') view = loansScreen();
   else if (name === 'loan') view = loanScreen(decodeURIComponent(arg ?? ''));
-  else if (name === 'lend') view = lendScreen();
+  else if (name === 'lend') view = lendScreen(decodeURIComponent(arg ?? ''));
   else if (name === 'limits') view = limitsScreen();
   else view = borrowScreen();
   app.replaceChildren(view);

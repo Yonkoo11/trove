@@ -14,3 +14,13 @@ export const buildTerms = (zat, principalMicro) => ({
   maxStartLtvBps: DEFAULT_LIMITS.maxStartLtvBps, liqLtvBps: DEFAULT_LIMITS.liqLtvBps, penaltyBps: DEFAULT_LIMITS.penaltyBps,
   termSeconds: Number(TERM_S), ...REGTEST,
 });
+
+/** A loan request is two numbers. Everything else is rebuilt from the shared limits, so a request cannot carry its own rates. */
+export const encodeRequest = (zat, principalMicro) => `trove1.${zat}.${principalMicro / 10_000n}`;
+
+export function decodeRequest(code) {
+  const m = /^trove1\.([1-9]\d{0,17})\.([1-9]\d{0,14})$/.exec(String(code).trim());
+  if (!m) return null;
+  const zat = BigInt(m[1]), principal = BigInt(m[2]) * 10_000n;
+  return { zat, principal, terms: buildTerms(zat, principal) };
+}

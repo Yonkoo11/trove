@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 48 pass](https://img.shields.io/badge/npm%20test-48%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
+![tests: 49 pass](https://img.shields.io/badge/npm%20test-48%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
 
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
 
@@ -10,7 +10,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 48 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 49 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -34,7 +34,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 ## Verify it yourself
 
 ```
-npm test                         # 48 pass, 0 fail
+npm test                         # 49 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 ```
 
