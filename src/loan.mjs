@@ -55,6 +55,8 @@ export function settleDefault(loan, at, priceMicroUsd) {
   return { lenderZat, borrowerZat: vault - lenderZat, shortfallMicroUsd: owed > covered ? owed - covered : 0n };
 }
 
+/** Dollars paid above what the loan needs stay with the payer's counterparty; surface them so they are sent back on the other chain. */
+const excessEffect = (payer, extra) => (extra > 0n ? [{ type: 'excess', refundTo: payer, amount: extra }] : []);
 const release = (to, signers, extra = {}) => ({ type: 'release', to, signers, ...extra });
 
 function declareDefault(loan, ev, reason, price) {
@@ -101,14 +103,14 @@ const handlers = {
     const ltv = ltvBps(loan.terms.principal, loan.terms.collateralZat, price);
     if (ltv > loan.terms.maxStartLtvBps) fail(`opening LTV ${ltv} bps is above the limit ${loan.terms.maxStartLtvBps}`);
     const next = mark(loan, 'active', ev, { activeAt: BigInt(ev.at), dueAt: BigInt(ev.at) + loan.terms.termSeconds, payRef: ev.ref, paidAmount: BigInt(ev.amount), lastPriceTs: BigInt(ev.reading.ts) });
-    return { loan: next, effects: [] };
+    return { loan: next, effects: excessEffect('lender', BigInt(ev.amount) - loan.terms.principal) };
   },
   repaid(loan, ev) {
     need(loan, 'active');
     const due = debtAt(loan, ev.at);
     if (BigInt(ev.amount) < due) fail(`repayment ${ev.amount} is below the debt ${due}`);
     const next = mark(loan, 'repaid', ev, { repayRef: ev.ref, paidAmount: BigInt(ev.amount), repaidDebt: due });
-    return { loan: next, effects: [release('borrower', ['borrower', 'lender'], { zat: loan.vaultZat })] };
+    return { loan: next, effects: [release('borrower', ['borrower', 'lender'], { zat: loan.vaultZat }), ...excessEffect('borrower', BigInt(ev.amount) - due)] };
   },
   price(loan, ev) {
     need(loan, 'active');

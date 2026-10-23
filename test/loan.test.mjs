@@ -191,3 +191,13 @@ test('A9: a loan id cannot be opened twice', () => {
   book.open({ id: 'L1', createdAt: T0, terms: terms() });
   throwsMsg(() => book.open({ id: 'L1', createdAt: T0, terms: terms() }), /already exists/);
 });
+
+test('overpayment is surfaced as a refund owed, exact payment is not', () => {
+  const exact = step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 200_000_000n, reading: rd('L1', 50_000_000, T0 + 90) });
+  assert.deepEqual(exact.effects, []);
+  const over = step(locked(), { type: 'loanPaid', at: T0 + 100, ref: 'p', amount: 230_000_000n, reading: rd('L1', 50_000_000, T0 + 90) });
+  assert.deepEqual(over.effects, [{ type: 'excess', refundTo: 'lender', amount: 30_000_000n }]);
+  const a = active(), at = T0 + 100 + 86400, due = debtAt(a, at);
+  const rep = step(a, { type: 'repaid', at, amount: due + 5n, ref: 'r' });
+  assert.deepEqual(rep.effects[1], { type: 'excess', refundTo: 'borrower', amount: 5n });
+});

@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 49 pass](https://img.shields.io/badge/npm%20test-48%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
+![tests: 50 pass](https://img.shields.io/badge/npm%20test-48%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
 
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
 
@@ -10,11 +10,11 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 49 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 50 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
-| Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 and lender overpayment disclosed below | reviewed, not proven |
+| Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 disclosed below | reviewed, not proven |
 | Forged signature rejected by the node | a real FROST-signed vault spend with one bit flipped in a spend signature (first half, then second half) was posted to the node: both refused ("Orchard or Ironwood Halo2 proof verification failed", the node's single message for its batched proof and signature check), the untouched copy was accepted (`spike-scripts/forged-node.py`); the signer and builder also refuse tampered signatures earlier (`forged.sh`) | tested (regtest) |
 | Public testnet run | none | not done |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
@@ -29,12 +29,12 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 - **The FROST crates are unaudited** and the demo tool is marked "not for production". The orchard fork with FROST support (`unstable-frost`, zcash/orchard#475) is unmerged.
 - **Event time is supplied by the driver.** The rules trust it to come from a trusted clock or block time.
 - Fixed in the rules and unit-tested, not re-run on chain: late or short deposits are refunded in full (`refundDeposit`), over-locked collateral is returned in full, duplicate loan ids are refused by `LoanBook` (findings A2, A3, A9).
-- Still open: a lender can hold back a newer price and submit an older one that is still fresh (A7, bounded by `maxPriceAge`); a lender who pays more than the principal is not refunded the extra; one shared vault wallet serves every loan on regtest.
+- Still open: a lender can hold back a newer price and submit an older one that is still fresh (A7, bounded by `maxPriceAge`); a payment above what the loan needs is flagged as a refund owed (`excess` effect), but the refund itself is a manual step on the other chain; one shared vault wallet serves every loan on regtest.
 
 ## Verify it yourself
 
 ```
-npm test                         # 49 pass, 0 fail
+npm test                         # 50 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 ```
 
