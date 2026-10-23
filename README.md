@@ -50,5 +50,6 @@ trove/
 ├── test/      unit and random-sequence stress tests
 ├── docs/      gate1-viewer-fields.json, what a chain viewer sees
 ├── design/    audience, judge, direction and build brief
+├── brand/     the logo: brief, art direction, 9 candidates, critique, exports
 └── company/   THESIS.md
 ```

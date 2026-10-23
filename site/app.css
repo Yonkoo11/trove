@@ -63,7 +63,7 @@ h3 { font-size: 16px; line-height: 24px; }
   margin: 0 auto;
   padding: 16px;
 }
-.brand { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; white-space: nowrap; font-weight: 500; font-size: 16px; text-decoration: none; }
+.brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; white-space: nowrap; font-weight: 500; font-size: 16px; text-decoration: none; }
 .nav nav { display: flex; gap: 4px; }
 .nav nav a {
   display: inline-flex;
@@ -222,3 +222,4 @@ td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--
 }
 .stub summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--muted); }
 .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.brand .mark { display: block; flex: none; }

@@ -5,6 +5,8 @@ Extracted from `site/app.css` as built. Every value below is in that file.
 ## Identity
 A loan desk, not a brochure: light grey ground, white panels, near-black ink, one amber accent (#F4B728) used only on the primary button. The signature device is the loan stub, a small white slip with a dashed ink top edge and dotted leaders between label and value, printed with the fields the chain shows.
 
+Mark: a portrait loan ticket in amber on an ink rounded square, two punch notches and a dashed perforation, the same ticket as the Borrow screen. Source in brand/final/logo.svg, run record in brand/CRITIQUE.md. Model-made, the owner can replace it. Amber on the ground fails contrast, so the mark always sits on the ink tile.
+
 ## Tokens
 - Colours: ground #F4F5F7, paper #FFFFFF, ink #12151A, muted #5E6670, accent #F4B728, rule #D9DCE1, red #B42318, green #067647.
 - Type: Geist variable (woff2), 16px/24px body, 24px/32px headings at weight 500, 14px/20px labels, 12px/16px stub text, tabular numerals everywhere.

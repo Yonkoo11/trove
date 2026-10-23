@@ -1,6 +1,30 @@
-{ "name": "Trove", "tagline": "Borrow dollars against ZEC held in a shielded vault.", "colorMode": "light-only",
-  "brandColor": "#12151A", "accent": "#F4B728", "ink": ["#12151A", "#5E6670"],
-  "semantic": { "success": "#067647", "warning": "#F4B728", "danger": "#B42318" },
-  "fonts": { "display": "Geist", "body": "Geist", "mono": "" },
-  "radii": { "sm": 2, "md": 6, "lg": 12 }, "shadowPhilosophy": "soft-elevation",
-  "signatureElement": "loan stub: white slip, dashed ink top edge, dotted leaders", "logoPath": "" }
+{
+  "name": "Trove",
+  "tagline": "Borrow dollars against ZEC held in a shielded vault.",
+  "colorMode": "light-only",
+  "brandColor": "#12151A",
+  "accent": "#F4B728",
+  "ink": [
+    "#12151A",
+    "#5E6670"
+  ],
+  "semantic": {
+    "success": "#067647",
+    "warning": "#F4B728",
+    "danger": "#B42318"
+  },
+  "fonts": {
+    "display": "Geist",
+    "body": "Geist",
+    "mono": ""
+  },
+  "radii": {
+    "sm": 2,
+    "md": 6,
+    "lg": 12
+  },
+  "shadowPhilosophy": "soft-elevation",
+  "signatureElement": "loan stub: white slip, dashed ink top edge, dotted leaders",
+  "logoPath": "brand/final/logo.svg",
+  "logoMark": "portrait loan ticket, two punch notches, dashed perforation"
+}
