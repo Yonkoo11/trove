@@ -15,7 +15,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
 | Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 and lender overpayment disclosed below | reviewed, not proven |
-| Forged signature rejected by the node | signer tool rejects a random signature; a forged one sent straight to the node was not tried | not tested |
+| Forged signature rejected by the node | the signer refuses a random and a replayed signature (`spike-scripts/forged.sh`), and the transaction builder refuses a signed file with one bit flipped (`SighashMismatch`); both stop it before the node, so the node's own check was never reached | not tested at the node |
 | Public testnet run | none | not done |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
 | On-chain enforcement of who signs a payout | not claimed: any 2 of 3 keys can spend | not claimed |
