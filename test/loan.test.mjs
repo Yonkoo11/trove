@@ -130,8 +130,11 @@ test('lender is not asked to pay when the opening price already fails the limit'
 });
 test('a default closes only after both payouts are confirmed, each to its own party', () => {
   const at = T0 + 3600;
-  const d = step(active(), { type: 'price', at, reading: rd('L1', 22_000_000, at - 10) }).loan;
+  const declared = step(active(), { type: 'price', at, reading: rd('L1', 22_000_000, at - 10) }).loan;
+  throwsMsg(() => step(declared, { type: 'releaseConfirmed', at: at + 1, txid: 't0', to: 'lender' }), /not co-signed/);
+  const d = step(declared, { type: 'keeperCosign', at: at + 1, reading: rd('L1', 22_000_000, at) }).loan;
   assert.deepEqual(d.pending, ['lender', 'borrower']);
+  throwsMsg(() => step(d, { type: 'keeperCosign', at: at + 1, reading: rd('L1', 22_000_000, at + 1) }), /already co-signed/);
   throwsMsg(() => step(d, { type: 'releaseConfirmed', at: at + 1, txid: 'x', to: 'keeper' }), /no pending payout/);
   const half = step(d, { type: 'releaseConfirmed', at: at + 1, txid: 't1', to: 'lender' }).loan;
   assert.equal(half.state, 'defaulted');

@@ -4,7 +4,7 @@
 // Loan time is simulated; the lock and every release are real regtest transactions signed 2-of-3 with FROST.
 import { execFileSync } from 'node:child_process';
 import { newKeeperKey, signReading } from '../src/signed-price.mjs';
-import { openLoan, step, keeperMayCosignDefault } from '../src/loan.mjs';
+import { openLoan, step } from '../src/loan.mjs';
 
 const FEE = 10_000n;
 const sh = (script, ...args) => execFileSync('bash', [`spike-scripts/${script}`, ...args], { encoding: 'utf8', timeout: 400_000, stdio: ['ignore', 'pipe', 'inherit'] });
@@ -67,7 +67,8 @@ if (scenario === 'D') {
     const r = step(loan, { type: 'price', at, reading: reading(id, 45, at - 30) }); loan = r.loan;
     const eff = r.effects[0];
     log(`price fell to $45, state ${loan.state}, lender gets ${eff.settlement.lenderZat} zat, borrower gets ${eff.settlement.borrowerZat} zat, signers ${eff.signers}`);
-    const s = keeperMayCosignDefault(loan, reading(id, 45, at + 40), at + 50); // the keeper signs the split at its own newer reading
+    const c = step(loan, { type: 'keeperCosign', at: at + 50, reading: reading(id, 45, at + 40) }); // the keeper signs the split at its own newer reading
+    loan = c.loan; const s = c.loan.settlement;
     log('keeper took its own newer reading ($45) and agreed to co-sign');
     const t1 = doRelease(eff, 'lender', s.lenderZat - FEE);
     const t2 = s.borrowerZat > 2n * FEE ? doRelease(eff, 'borrower', s.borrowerZat - 2n * FEE) : '';

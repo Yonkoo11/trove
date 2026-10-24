@@ -148,10 +148,20 @@ const handlers = {
     }
     return { loan, effects: [] };
   },
+  /** The keeper's co-sign step: stores the split at the keeper's own newer price. Payouts are only confirmed after it. */
+  keeperCosign(loan, ev) {
+    if (loan.cosigned) fail('the keeper already co-signed this default');
+    if (loan.paidOut && Object.keys(loan.paidOut).length) fail('a payout is already confirmed');
+    const settlement = keeperMayCosignDefault(loan, ev.reading, ev.at);
+    const pending = settlement.borrowerZat > 0n ? ['lender', 'borrower'] : ['lender'];
+    return { loan: { ...loan, settlement, pending, cosigned: true, lastPriceTs: BigInt(ev.reading.ts) }, effects: [release('lender+borrower', ['lender', 'keeper'], { settlement, reason: loan.defaultReason })] };
+  },
+
   releaseConfirmed(loan, ev) {
     const to = { repaid: 'closed_repaid', defaulted: 'closed_defaulted', aborted: 'closed_aborted' }[loan.state];
     if (!to) fail(`nothing to release in state ${loan.state}`);
     if (loan.state === 'defaulted') {
+      if (!loan.cosigned) fail('the keeper has not co-signed the default split yet');
       // a default pays two parties; close only when both payouts are confirmed, each named by ev.to
       if (!loan.pending.includes(ev.to)) fail(`no pending payout to ${ev.to}`);
       const pending = loan.pending.filter((x) => x !== ev.to);
