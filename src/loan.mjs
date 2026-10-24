@@ -69,13 +69,18 @@ function declareDefault(loan, ev, reason, price) {
 /**
  * The keeper is one of the two signers of a default payout, so it is where a held-back price (A7) is caught: before
  * co-signing a price default it takes its own reading, which must be newer than the one the lender used, and the loan
- * must still be at or over the liquidation line on it. Returns true or throws why not. A term default needs only a valid newer reading.
+ * must still be at or over the liquidation line on it, and the lender's share must not exceed what the keeper's price gives. Returns true or throws why not. A term default needs only a valid newer reading.
  */
 export function keeperMayCosignDefault(loan, reading, at) {
   if (loan.state !== 'defaulted') fail(`no default to co-sign in state ${loan.state}`);
   const price = checkReading(loan, reading, at);
+  const declaredAt = loan.history.at(-1).at;
+  if (BigInt(reading.ts) < declaredAt) fail('the keeper reading must be taken after the default was declared');
   if (loan.defaultReason === 'price' && ltvBps(debtAt(loan, at), loan.terms.collateralZat, price) < loan.terms.liqLtvBps) {
     fail('a newer price shows the loan back under the liquidation line, keeper must not co-sign');
+  }
+  if (loan.settlement.lenderZat > settleDefault(loan, declaredAt, price).lenderZat) {
+    fail('the payout split uses a lower price than the keeper reads now, keeper must not co-sign');
   }
   return true;
 }

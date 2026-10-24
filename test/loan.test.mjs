@@ -210,6 +210,10 @@ test('A7: the keeper refuses to co-sign a price default when a newer price is ba
   assert.equal(d.state, 'defaulted');
   // the keeper's own reading, taken now, shows $50 again: refuse
   throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 50_000_000, at + 10), at + 20), /back under the liquidation line/);
+  // still under the line but higher than the lender's pick ($24): the split favours the lender, refuse
+  throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 24_000_000, at + 10), at + 20), /payout split uses a lower price/);
+  // a reading taken before the default was declared is refused
+  throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 20_000_000, at - 100), at + 20), /not newer|after the default/);
   // the price really is still down: co-sign
   assert.equal(keeperMayCosignDefault(d, rd('L1', 20_000_000, at + 10), at + 20), true);
   // an old reading cannot be replayed to approve it, and a reading for another loan is refused
