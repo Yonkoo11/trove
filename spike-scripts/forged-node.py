@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Node-side forged-signature check. Input: hex of a real, FROST-signed vault spend (captured off the wire,
-see ai/progress.md) and the hex of one of its spend-auth signatures. Posts to zebrad's sendrawtransaction:
+"""Node-side forged-signature check. Input: hex of a real, FROST-signed vault spend (captured off the wire
+by the lifecycle script) and the hex of one of its spend-auth signatures. Posts to zebrad's sendrawtransaction:
 the tx with one bit flipped in that signature (R half, then s half), then the untouched tx as control."""
 import json, sys, urllib.request
 raw = open(sys.argv[1]).read().strip(); sig = sys.argv[2]
