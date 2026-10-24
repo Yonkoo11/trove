@@ -40,6 +40,9 @@ test('live-source parsers handle each API shape and reject garbage', async () =>
   assert.equal(await SOURCES.coingecko(f({ zcash: { usd: 1258.68 } })), 1_258_680_000n);
   assert.equal(await SOURCES.coinbase(f({ data: { amount: '1258.5' } })), 1_258_500_000n);
   assert.equal(await SOURCES.kraken(f({ error: [], result: { XZECZUSD: { c: ['1258.40', '1'] } } })), 1_258_400_000n);
+  // reply shapes copied from live calls on 2026-10-25
+  assert.equal(await SOURCES.gemini(f({ bid: '1207.52000', ask: '1207.55000', last: '1208.56000' })), 1_208_560_000n);
+  assert.equal(await SOURCES.bitfinex(f({ mid: '1194.5', last_price: '1194.5', timestamp: '1792884915.6585045' })), 1_194_500_000n);
   await assert.rejects(SOURCES.kraken(f({ error: ['EQuery:Unknown asset pair'] })), /Unknown/);
   await assert.rejects(SOURCES.coinbase(f({}, 500)), /HTTP 500/);
   await assert.rejects(SOURCES.coingecko(f({ zcash: { usd: 'abc' } })), /bad price/);

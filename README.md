@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 50 pass](https://img.shields.io/badge/npm%20test-50%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
+![tests: 52 pass](https://img.shields.io/badge/npm%20test-52%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
 
 Live quote desk: https://trovedesk.xyz (regtest, no real funds).
 
@@ -12,11 +12,11 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 50 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 52 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
-| Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 disclosed below | reviewed, not proven |
+| Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 closed at the keeper's signing step, see below | reviewed, not proven |
 | Forged signature rejected by the node | a real FROST-signed vault spend with one bit flipped in a spend signature (first half, then second half) was posted to the node: both refused ("Orchard or Ironwood Halo2 proof verification failed", the node's single message for its batched proof and signature check), the untouched copy was accepted (`spike-scripts/forged-node.py`); the signer and builder also refuse tampered signatures earlier (`forged.sh`) | tested (regtest) |
 | Public testnet run | none | not done |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
@@ -27,16 +27,17 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 - **The stablecoin leg is public.** Principal and repayment cross chains and are visible there.
 - **Policy is software, not chain law.** Any 2 of the 3 keys can spend. Keeper + lender together can take the collateral. Who signs each payout is enforced by `src/loan.mjs`, not by Zcash.
-- **The price is the keeper's reading.** Median of at least two keyless sources (CoinGecko live; Coinbase and Kraken parsers tested only against sample replies), signed with ed25519, not verified on-chain.
+- **The price is the keeper's reading.** Median of at least two keyless sources (CoinGecko, Gemini and Bitfinex read live on 2026-10-25 and agree within 3%; Coinbase and Kraken parsers tested only against sample replies), signed with ed25519, not verified on-chain.
 - **The FROST crates are unaudited** and the demo tool is marked "not for production". The orchard fork with FROST support (`unstable-frost`, zcash/orchard#475) is unmerged.
 - **Event time is supplied by the driver.** The rules trust it to come from a trusted clock or block time.
 - Fixed in the rules and unit-tested, not re-run on chain: late or short deposits are refunded in full (`refundDeposit`), over-locked collateral is returned in full, duplicate loan ids are refused by `LoanBook` (findings A2, A3, A9).
-- Still open: a lender can hold back a newer price and submit an older one that is still fresh (A7, bounded by `maxPriceAge`); a payment above what the loan needs is flagged as a refund owed (`excess` effect), but the refund itself is a manual step on the other chain; one shared vault wallet serves every loan on regtest.
+- A7 (a lender holding back a newer price and submitting an older one still inside `maxPriceAge`): the keeper is one of the two signers of a default payout, and `keeperMayCosignDefault` makes it refuse a price default unless its own newer signed reading still shows the loan at or over the liquidation line. Tested in `test/loan.test.mjs`. It is the keeper's rule, not something the chain enforces; a keeper that colludes with the lender defeats it.
+- Still open: a payment above what the loan needs is flagged as a refund owed (`excess` effect), but the refund itself is a manual step on the other chain; one shared vault wallet serves every loan on regtest.
 
 ## Verify it yourself
 
 ```
-npm test                         # 50 pass, 0 fail
+npm test                         # 52 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 ```
 

@@ -23,6 +23,8 @@ export const SOURCES = {
     if (j.error?.length) throw new Error(j.error.join());
     return toMicro(Object.values(j.result)[0].c[0]);
   },
+  gemini: async (f) => toMicro((await getJson('https://api.gemini.com/v1/pubticker/zecusd', f)).last),
+  bitfinex: async (f) => toMicro((await getJson('https://api.bitfinex.com/v1/pubticker/zecusd', f)).last_price),
 };
 
 const median = (xs) => { const s = [...xs].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)); const h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2n; };

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { openLoan, step, debtAt } from '../src/loan.mjs';
+import { openLoan, step, debtAt, keeperMayCosignDefault } from '../src/loan.mjs';
 import { newKeeperKey, signReading } from '../src/signed-price.mjs';
 import { ZAT_PER_ZEC, ltvBps } from '../src/money.mjs';
 
@@ -200,4 +200,27 @@ test('overpayment is surfaced as a refund owed, exact payment is not', () => {
   const a = active(), at = T0 + 100 + 86400, due = debtAt(a, at);
   const rep = step(a, { type: 'repaid', at, amount: due + 5n, ref: 'r' });
   assert.deepEqual(rep.effects[1], { type: 'excess', refundTo: 'borrower', amount: 5n });
+});
+
+test('A7: the keeper refuses to co-sign a price default when a newer price is back under the line', () => {
+  const a = active(); // 10 ZEC, debt about $200, liquidation at 80% LTV = price below about $25
+  const at = T0 + 1000;
+  // the lender held back the cheap reading at ts at-200 ($20) and submits it while it is still fresh
+  const d = step(a, { type: 'price', at, reading: rd('L1', 20_000_000, at - 200) }).loan;
+  assert.equal(d.state, 'defaulted');
+  // the keeper's own reading, taken now, shows $50 again: refuse
+  throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 50_000_000, at + 10), at + 20), /back under the liquidation line/);
+  // the price really is still down: co-sign
+  assert.equal(keeperMayCosignDefault(d, rd('L1', 20_000_000, at + 10), at + 20), true);
+  // an old reading cannot be replayed to approve it, and a reading for another loan is refused
+  throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 20_000_000, at - 300), at + 20), /not newer|stale/);
+  throwsMsg(() => keeperMayCosignDefault(d, rd('OTHER', 20_000_000, at + 10), at + 20), /another loan/);
+  throwsMsg(() => keeperMayCosignDefault(a, rd('L1', 20_000_000, at + 10), at + 20), /no default to co-sign/);
+});
+
+test('A7: a term default needs only a valid newer reading to co-sign', () => {
+  const a = active();
+  const late = a.dueAt + 3601n;
+  const d = step(a, { type: 'termDefault', at: Number(late), reading: rd('L1', 50_000_000, Number(late) - 30) }).loan;
+  assert.equal(keeperMayCosignDefault(d, rd('L1', 50_000_000, Number(late) + 10), Number(late) + 20), true);
 });
