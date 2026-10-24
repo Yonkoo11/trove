@@ -210,12 +210,13 @@ test('A7: the keeper refuses to co-sign a price default when a newer price is ba
   assert.equal(d.state, 'defaulted');
   // the keeper's own reading, taken now, shows $50 again: refuse
   throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 50_000_000, at + 10), at + 20), /back under the liquidation line/);
-  // still under the line but higher than the lender's pick ($24): the split favours the lender, refuse
-  throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 24_000_000, at + 10), at + 20), /payout split uses a lower price/);
+  // still under the line but higher than the lender's pick ($24): the keeper signs the split at its own price, which pays the lender fewer zatoshis
+  const fairer = keeperMayCosignDefault(d, rd('L1', 24_000_000, at + 10), at + 20);
+  assert.ok(fairer.lenderZat < d.settlement.lenderZat && fairer.borrowerZat > d.settlement.borrowerZat);
   // a reading taken before the default was declared is refused
   throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 20_000_000, at - 100), at + 20), /not newer|after the default/);
   // the price really is still down: co-sign
-  assert.equal(keeperMayCosignDefault(d, rd('L1', 20_000_000, at + 10), at + 20), true);
+  assert.deepEqual(keeperMayCosignDefault(d, rd('L1', 20_000_000, at + 10), at + 20), d.settlement);
   // an old reading cannot be replayed to approve it, and a reading for another loan is refused
   throwsMsg(() => keeperMayCosignDefault(d, rd('L1', 20_000_000, at - 300), at + 20), /not newer|stale/);
   throwsMsg(() => keeperMayCosignDefault(d, rd('OTHER', 20_000_000, at + 10), at + 20), /another loan/);
@@ -226,5 +227,5 @@ test('A7: a term default needs only a valid newer reading to co-sign', () => {
   const a = active();
   const late = a.dueAt + 3601n;
   const d = step(a, { type: 'termDefault', at: Number(late), reading: rd('L1', 50_000_000, Number(late) - 30) }).loan;
-  assert.equal(keeperMayCosignDefault(d, rd('L1', 50_000_000, Number(late) + 10), Number(late) + 20), true);
+  assert.deepEqual(keeperMayCosignDefault(d, rd('L1', 50_000_000, Number(late) + 10), Number(late) + 20), d.settlement);
 });
