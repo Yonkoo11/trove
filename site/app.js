@@ -287,7 +287,7 @@ function limitsScreen() {
     ]],
     ['What is unproven', [
       'The signing libraries are unaudited and the demo client is marked not for production.',
-      'This depends on an unmerged Orchard fork (zcash/orchard#475).',
+      'The vault key uses an experimental Orchard call that is unmerged and that Zcash’s own reviewer says will be removed (zcash/orchard#475). Wallets that follow the coming key standard may not support such keys, so funds in one could become inaccessible.',
       'Regtest only. No public testnet run yet. The regtest runs are dated 20 and 22 Oct 2026.',
     ]],
   ];
