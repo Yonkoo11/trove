@@ -223,3 +223,10 @@ td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--
 .stub summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--muted); }
 .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .brand .mark { display: block; flex: none; }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 8px 0 12px; }
+.stat strong { display: block; font-size: 32px; line-height: 40px; font-weight: 600; }
+.stat span { color: var(--muted); font-size: 14px; }
+@media (min-width: 900px) { .cols:has(> .panel + .panel + .panel) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.stats + .small { margin-bottom: 0; }
+.screen > .panel + .cols { margin-top: 16px; }

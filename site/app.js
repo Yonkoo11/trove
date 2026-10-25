@@ -186,7 +186,8 @@ function borrowScreen() {
 }
 
 // ---- Loans
-const zatLine = (paid) => paid.map(([who, z]) => `${who} +${fmt(z)} zat`).join(', ');
+const zecStr = (z) => (Number(z) / 1e8).toFixed(4).replace(/\.?0+$/, '');
+const zatLine = (paid) => paid.map(([who, z]) => `${who} +${zecStr(z)} ZEC`).join(', ');
 const stubNote = 'Fee-only view checked on one vault release; each run’s own transaction is not stored.';
 
 function loansScreen() {
@@ -270,26 +271,32 @@ function lendScreen(code = '') {
 
 // ---- Limits
 function limitsScreen() {
-  const items = [
-    'The keeper and lender together can take the collateral. Any 2 of 3 keys can spend.',
-    'The stablecoin leg crosses chains through NEAR 1Click and is visible on the other chain.',
-    'The price is the keeper’s reading of at least 2 public sources, signed by the keeper. Nothing on-chain verifies it.',
-    'Who may sign a release is rules in this software, not rules enforced by Zcash.',
-    'The signing libraries are unaudited and the demo client is marked not for production.',
-    'This depends on an unmerged Orchard fork (zcash/orchard#475).',
-    'The dollar amount you borrow is public on the other chain. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
-    'On regtest one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
-    'The keeper learns loan ids and when each step happens.',
-    'Built in the Zecathon window: the regtest runs are dated 20 and 22 Oct 2026.',
-    'Regtest only. No public testnet run yet.',
+  const groups = [
+    ['Who can move your collateral', [
+      'The keeper and lender together can take the collateral. Any 2 of 3 keys can spend.',
+      'Who may sign a release is rules in this software, not rules enforced by Zcash.',
+      'The price is the keeper’s reading of at least 2 public sources, signed by the keeper. Nothing on-chain verifies it.',
+    ]],
+    ['What others can see', [
+      'The stablecoin leg crosses chains through NEAR 1Click and is visible on the other chain.',
+      'The dollar amount you borrow is public on the other chain. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
+      'The keeper learns loan ids and when each step happens.',
+      'On regtest one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
+    ]],
+    ['What is unproven', [
+      'The signing libraries are unaudited and the demo client is marked not for production.',
+      'This depends on an unmerged Orchard fork (zcash/orchard#475).',
+      'Regtest only. No public testnet run yet. The regtest runs are dated 20 and 22 Oct 2026.',
+    ]],
   ];
+  const stat = (n, label) => h('div', { class: 'stat' }, h('strong', {}, n), h('span', {}, label));
   return h('section', { class: 'screen' }, h('h1', {}, 'Limits'),
     h('p', { class: 'lead' }, 'What this does not hide or stop.'),
-    h('div', { class: 'cols' },
-      h('div', { class: 'panel' }, h('ul', {}, items.map((t) => h('li', {}, t)))),
-      h('div', { class: 'stack' },
-        h('div', { class: 'panel' }, h('h3', {}, 'Back-test'),
-          h('p', {}, '336 thirty-day loans, 11% liquidated, 0 bad debt at the 40% opening and 70% liquidation limits.')))));
+    h('div', { class: 'panel' }, h('h3', {}, 'Back-test'),
+      h('div', { class: 'stats' }, stat('336', 'thirty-day loans'), stat('11%', 'liquidated'), stat('0', 'bad debt')),
+      h('p', { class: 'small' }, 'Run over 365 daily closes at the 40% opening and 70% liquidation limits.')),
+    h('div', { class: 'cols' }, groups.map(([t, items]) =>
+      h('div', { class: 'panel' }, h('h3', {}, t), h('ul', {}, items.map((x) => h('li', {}, x)))))));
 }
 
 // ---- router
