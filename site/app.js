@@ -182,8 +182,9 @@ function borrowScreen() {
   return h('section', { class: 'screen' },
     h('h1', {}, 'Borrow dollars against your ZEC, with the collateral held in a shielded vault.'),
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
+    h('div', { class: 'grid' }, ticket, stubPanel()),
     h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Regtest', 'no public testnet yet']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
-    h('div', { class: 'grid' }, ticket, stubPanel()), say);
+    say);
 }
 
 // ---- Loans
