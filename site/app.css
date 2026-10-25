@@ -166,10 +166,11 @@ main { outline: none; }
 .stub h2 { font-size: 24px; margin-bottom: 4px; }
 .stub .sub { color: var(--muted); font-size: 14px; line-height: 20px; margin-bottom: 16px; }
 .stub dl { margin: 0; }
-.stub .row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; }
+.stub .row { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; font-size: 14px; line-height: 20px; }
 .stub dt { color: var(--muted); }
 .stub .lead-dots { flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-2px); }
-.stub dd { margin: 0; font-weight: 500; }
+.stub dd { margin: 0; font-weight: 600; font-size: 16px; }
+.stub .sealed { margin: 16px 0 0; padding: 12px; background: var(--ground); border-radius: var(--r-stub); font-size: 14px; line-height: 20px; font-weight: 600; }
 .stub .fields { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
 .stub .fields li { border: 1px solid var(--rule); border-radius: var(--r-stub); padding: 2px 6px; }
 .stub .note { margin-top: 12px; color: var(--muted); }
@@ -230,3 +231,8 @@ td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--
 @media (min-width: 900px) { .cols:has(> .panel + .panel + .panel) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .stats + .small { margin-bottom: 0; }
 .screen > .panel + .cols { margin-top: 16px; }
+
+.proof { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0 24px; padding: 0; list-style: none; font-size: 14px; line-height: 20px; }
+.proof li { display: flex; gap: 6px; align-items: baseline; }
+.proof strong { font-weight: 600; }
+.proof span { color: var(--muted); }

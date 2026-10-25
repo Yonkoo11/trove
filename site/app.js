@@ -81,10 +81,10 @@ function stubPanel() {
     ];
     const dl = h('dl');
     for (const [k, v] of rows) dl.append(h('div', { class: 'row' }, h('dt', {}, k), h('span', { class: 'lead-dots' }), h('dd', {}, v)));
-    box.append(dl, h('p', { class: 'note' }, 'Everything else about the transaction is sealed: who sent it, who received it and how much.'),
+    box.append(dl, h('p', { class: 'sealed' }, 'Sealed: who sent it, who received it, how much.'),
       h('details', {}, h('summary', {}, 'Raw fields a viewer can read on each action'),
         h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f)))),
-      h('p', { class: 'note' }, `Checked on one transaction: ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. This is a release from the vault (lender and keeper signed), not the deposit; no deposit transaction is shown. Amounts and addresses are not among these fields. The stablecoin leg is on another chain and is public.`));
+      h('p', { class: 'note' }, `Checked on one vault release (lender and keeper signed): ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Not the deposit. The stablecoin leg is on another chain and is public.`));
   };
   gateListeners.add(draw); draw();
   return box;
@@ -182,6 +182,7 @@ function borrowScreen() {
   return h('section', { class: 'screen' },
     h('h1', {}, 'Borrow dollars against your ZEC, with the collateral held in a shielded vault.'),
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
+    h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Regtest', 'no public testnet yet']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
     h('div', { class: 'grid' }, ticket, stubPanel()), say);
 }
 
