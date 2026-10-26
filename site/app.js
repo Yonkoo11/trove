@@ -183,7 +183,7 @@ function borrowScreen() {
     h('h1', {}, 'Borrow dollars against your ZEC, with the collateral held in a shielded vault.'),
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
     h('div', { class: 'grid' }, ticket, stubPanel()),
-    h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Regtest', 'no public testnet yet']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
+    h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Testnet', 'lock + 3 payouts, 26 Oct']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
     say);
 }
 
@@ -288,7 +288,7 @@ function limitsScreen() {
     ['What is unproven', [
       'The signing libraries are unaudited and the demo client is marked not for production.',
       'The vault key uses an experimental Orchard call that is unmerged and that Zcash’s own reviewer says will be removed (zcash/orchard#475). Wallets that follow the coming key standard may not support such keys, so funds in one could become inaccessible.',
-      'Regtest only. No public testnet run yet. The regtest runs are dated 20 and 22 Oct 2026.',
+      'Regtest runs are dated 20 and 22 Oct 2026. One public testnet run on 26 Oct 2026: a lock and three payouts, one signer alone could not move funds. Not on mainnet; the refund path, the keeper’s price signing and explorer confirmation were not run on testnet.',
     ]],
   ];
   const stat = (n, label) => h('div', { class: 'stat' }, h('strong', {}, n), h('span', {}, label));

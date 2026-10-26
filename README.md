@@ -1,12 +1,12 @@
 # Trove
 
-![tests: 52 pass](https://img.shields.io/badge/npm%20test-52%20pass-brightgreen) ![chain: regtest only](https://img.shields.io/badge/chain-regtest%20only-lightgrey)
+![tests: 52 pass](https://img.shields.io/badge/npm%20test-52%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
 
-Live quote desk: https://trovedesk.xyz (regtest, no real funds).
+Live quote desk: https://trovedesk.xyz (no real funds).
 
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
 
-Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; not run on public testnet; not audited.
+Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; lock and three payouts run on **public Zcash testnet** (26 Oct 2026); not audited.
 
 ## What's real, and what we deliberately did not claim
 
@@ -18,7 +18,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
 | Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 closed at the keeper's signing step, see below | reviewed, not proven |
 | Forged signature rejected by the node | a real FROST-signed vault spend with one bit flipped in a spend signature (first half, then second half) was posted to the node: both refused ("Orchard or Ironwood Halo2 proof verification failed", the node's single message for its batched proof and signature check), the untouched copy was accepted (`spike-scripts/forged-node.py`); the signer and builder also refuse tampered signatures earlier (`forged.sh`) | tested (regtest) |
-| Public testnet run | none | not done |
+| Public testnet run | lock `ed25f049...63dd` then repay-style, default and abort payouts (`73f46ef8...dc48`, `37284cad...6994`, `ab24ccf6...f099`) on testnet.zec.rocks; a fresh view-only wallet synced from the public server shows the vault at 0.0497 ZEC, borrower 0.35, lender 0.10; one signer alone produced no signature. `spike-scripts/testnet-setup.sh`, `build-signer-nu7.sh` | tested (testnet, one run; refund by name, keeper price signing and block-explorer confirmation not run) |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
 | On-chain enforcement of who signs a payout | not claimed: any 2 of 3 keys can spend | not claimed |
 | Audit of the FROST crates or this code | none | not done |
