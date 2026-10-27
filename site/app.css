@@ -202,12 +202,11 @@ main { outline: none; }
 .terms[hidden] { display: none; }
 
 table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; }
-th { text-align: left; font-weight: 500; font-size: 12px; line-height: 16px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+th { text-align: left; font-weight: 500; font-size: 13px; line-height: 16px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
 td { padding: 4px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 tr:last-child td { border-bottom: 0; }
-td a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; text-decoration: none; }
-@media (hover: hover) { td a:hover { text-decoration: underline; text-underline-offset: 4px; } }
-td a::after { content: "\2192"; margin-left: 6px; color: var(--muted); }
+td a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; }
+@media (hover: hover) { td a:hover { text-decoration-color: var(--ink); } }
 td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 4px; }
 .tag { display: inline-block; padding: 2px 10px; border-radius: var(--r-pill); background: var(--ground); font-size: 12px; line-height: 16px; font-weight: 500; }
 .tag.good { color: var(--green); background: #E7F5EE; }
@@ -300,5 +299,5 @@ ul.facts li:first-child { padding-top: 0; border-top: 0; }
 .terms-panel .row:first-child { border-top: 0; }
 .terms-panel dt { color: #5E6670; }
 .terms-panel dd { margin: 0; text-align: right; font-weight: 500; }
-.foot-row { display: flex; gap: 24px; align-items: center; font-size: 14px; color: #5E6670; padding: 20px 0; }
+.foot-row { display: flex; gap: 24px; align-items: center; font-size: 14px; color: var(--muted); padding-top: 20px; padding-bottom: 20px; }
 .foot-row a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }

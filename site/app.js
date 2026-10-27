@@ -3,7 +3,7 @@ import { DEFAULT_LIMITS } from './lib/defaults.mjs';
 import { TERM_S, REGTEST, interestMicro, buildTerms, encodeRequest, decodeRequest } from './lib/terms.mjs';
 
 const NAME = 'Trove';
-const STORED = { micro: 1_240_743_930n, label: 'Last stored close, 22 Oct 2026' };
+const STORED = { micro: 1_240_743_930n, label: 'last stored close, 22 Oct 2026' };
 
 const RUNS = {
   A: { id: 'A', name: 'Repaid on time', tag: 'Repaid', good: true, signers: 'borrower + lender',
@@ -141,7 +141,7 @@ function borrowScreen() {
   const line = (k, v) => h('li', {}, h('span', {}, k), h('span', {}, v));
   const update = () => {
     q = quote(zec.value, bor.value);
-    priceNote.replaceChildren(document.createTextNode('ZEC at '), h('b', {}, usd(price.micro)), document.createTextNode(` · ${price.label}`));
+    priceNote.replaceChildren(document.createTextNode('ZEC at '), h('b', {}, usd(price.micro)), document.createTextNode(`, ${price.label}`));
     terms.hidden = true;
     if (q.error !== undefined) {
       err.textContent = q.error; btn.disabled = true;
@@ -249,7 +249,7 @@ function requestPanel(code) {
         line('Liquidation price', `${usd(liq)} per ZEC`),
         line('You earn if repaid', usd(interest)),
         line('Funding window', `${t.fundWindow / 60} minutes`)),
-      h('p', { class: 'small' }, `Price used: ${usd(price.micro)}. ${price.label}.`));
+      h('p', { class: 'small' }, `Price used: ${usd(price.micro)}, ${price.label}.`));
   };
   input.addEventListener('input', show);
   show();
