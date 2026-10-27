@@ -198,6 +198,7 @@ function borrowScreen() {
     h('h1', {}, 'Borrow dollars against your ZEC, with the collateral held in a shielded vault.'),
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
     h('div', { class: 'grid' }, ticket, stubPanel()),
+    h('dl', { class: 'market', style: 'margin-top:24px' }, [['Opens at up to', `${DEFAULT_LIMITS.maxStartLtvBps / 100}%`, 'of collateral value'], ['Liquidated at', `${DEFAULT_LIMITS.liqLtvBps / 100}%`, 'loan to value'], ['Interest', `${DEFAULT_LIMITS.aprBps / 100}% APR`, 'fixed for the term'], ['Term', '30 days', 'one payment at the end']].map(([k, v, n]) => h('div', {}, h('dt', {}, k), h('dd', {}, v), h('span', {}, n)))),
     h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Testnet', 'lock + 3 payouts, 26 Oct']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
     say);
 }
@@ -270,50 +271,53 @@ function requestPanel(code) {
 }
 function lendScreen(code = '') {
   const req = requestPanel(code);
-  const el = h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
-    h('p', { class: 'lead' }, 'You fund a borrower in dollars and hold one of three keys to their ZEC vault.'),
+  const step = (n, t, d) => h('li', { class: 'step' }, h('span', { class: 'num' }, String(n)), h('div', {}, h('strong', {}, t), h('p', {}, d)));
+  const can = (who, what) => h('li', {}, h('span', { class: 'tag' }, who), h('p', {}, what));
+  return h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
+    h('p', { class: 'lead' }, 'Fund a borrower in dollars and hold one of three keys to their ZEC vault.'),
     req,
-    h('div', { class: 'cols' },
-      h('form', { class: 'panel', onsubmit: (e) => e.preventDefault() },
-        h('h3', {}, 'What happens next'),
-        h('ol', {}, h('li', {}, 'A borrower sends you a request code or link from the Borrow screen.'), h('li', {}, 'You check it and pay the dollars on the other chain.'), h('li', {}, 'You hold your key until the loan closes.')),
-        h('p', { class: 'small' }, 'Regtest build: there is no inbox, so requests are passed by hand.')),
-      h('div', { class: 'panel' }, h('h3', {}, 'What you can sign'),
-        h('ul', {}, h('li', {}, 'Alone: nothing. A release needs two keys.'),
-          h('li', {}, 'With the borrower: a repayment release.'),
-          h('li', {}, 'With the keeper: a default release, after a signed price past the liquidation line or the end of the term plus grace.'),
-          h('li', {}, 'You cannot stop the borrower and keeper signing an abort before you pay.')))));
-  return el;
+    h('div', { class: 'cols two' },
+      h('div', { class: 'panel' }, h('h3', {}, 'How it works'),
+        h('ol', { class: 'steps' },
+          step(1, 'Get a request code', 'The borrower sends you a code or link from the Borrow screen. Paste it above.'),
+          step(2, 'Check the terms', 'The screen shows the amount, the collateral and the price at which it would be sold.'),
+          step(3, 'Pay and hold your key', 'You pay the dollars, then keep your key until the loan closes.'))),
+      h('div', { class: 'panel' }, h('h3', {}, 'What your key can do'),
+        h('ul', { class: 'can' },
+          can('Alone', 'Nothing. Every release needs two keys.'),
+          can('With the borrower', 'Release the collateral back after repayment.'),
+          can('With the keeper', 'Take the collateral if the price falls past the liquidation line or the term and grace period end.'),
+          can('Never', 'Stop the borrower and keeper from cancelling the loan before you pay.')))));
 }
 
 // ---- Limits
 function limitsScreen() {
   const groups = [
     ['Who can move your collateral', [
-      'The keeper and lender together can take the collateral. Any 2 of 3 keys can spend.',
-      'Who may sign a release is rules in this software, not rules enforced by Zcash.',
-      'The price is the keeper’s reading of at least 2 public sources, signed by the keeper. Nothing on-chain verifies it.',
+      'Any two of the three keys can move it. The keeper and lender together can take it.',
+      'The rules on who may sign are enforced by this software, not by Zcash.',
+      'The keeper reads the price from at least two public sources and signs it. Nothing on-chain checks it.',
     ]],
     ['What others can see', [
-      'The stablecoin leg crosses chains through NEAR 1Click and is visible on the other chain.',
-      'The dollar amount you borrow is public on the other chain. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
+      'The dollar payment crosses chains through NEAR 1Click and is visible on the other chain.',
+      'The dollar amount of the loan is public. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
       'The keeper learns loan ids and when each step happens.',
-      'On regtest one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
+      'On the test chain one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
     ]],
     ['What is unproven', [
-      'The signing libraries are unaudited and the demo client is marked not for production.',
-      'The vault key uses an experimental Orchard call that is unmerged and that Zcash’s own reviewer says will be removed (zcash/orchard#475). Wallets that follow the coming key standard may not support such keys, so funds in one could become inaccessible.',
-      'Regtest runs are dated 20 and 22 Oct 2026. One public testnet run on 26 Oct 2026: a lock and three payouts, one signer alone could not move funds. Not on mainnet; the refund path, the keeper’s price signing and explorer confirmation were not run on testnet.',
+      'The signing code is unaudited.',
+      'The vault key uses an experimental Zcash feature that is not merged and that its own reviewer says will be removed (zcash/orchard#475). Funds in such a vault could become unreachable.',
+      'Run on a local test chain on 20 and 22 Oct 2026, and once on public Zcash testnet on 26 Oct 2026: one lock and three payouts, and one signer alone could not move funds. Not run on mainnet.',
     ]],
   ];
   const stat = (n, label) => h('div', { class: 'stat' }, h('strong', {}, n), h('span', {}, label));
   return h('section', { class: 'screen' }, h('h1', {}, 'Limits'),
-    h('p', { class: 'lead' }, 'What this does not hide or stop.'),
+    h('p', { class: 'lead' }, 'What Trove does not hide, and what it cannot stop.'),
     h('div', { class: 'panel' }, h('h3', {}, 'Back-test'),
       h('div', { class: 'stats' }, stat('336', 'thirty-day loans'), stat('11%', 'liquidated'), stat('0', 'bad debt')),
       h('p', { class: 'small' }, 'Run over 365 daily closes at the 40% opening and 70% liquidation limits.')),
-    h('div', { class: 'cols' }, groups.map(([t, items]) =>
-      h('div', { class: 'panel' }, h('h3', {}, t), h('ul', {}, items.map((x) => h('li', {}, x)))))));
+    h('div', { class: 'cols' }, groups.map(([t, items], i) =>
+      h('div', { class: 'panel' }, h('span', { class: 'num' }, String(i + 1)), h('h3', {}, t), h('ul', { class: 'facts' }, items.map((x) => h('li', {}, x)))))));
 }
 
 // ---- router
