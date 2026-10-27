@@ -235,7 +235,7 @@ function loanScreen(id) {
       h('div', { class: 'stack' },
         h('div', { class: 'panel' }, h('h3', {}, 'Paid out'), h('p', {}, zatLine(r.paid))),
         h('div', { class: 'panel' }, h('h3', {}, 'What stays public'),
-          h('p', {}, 'The stablecoin leg on the other chain, and the keeper’s price reading. The vault release hides amounts and addresses. The loan amount in dollars is public, and with the price it bounds the collateral.'))),
+          h('p', { class: 'small' }, 'The dollar payment on the other chain, and the keeper’s price reading. The vault release hides amounts and addresses. The loan amount in dollars is public, and with the price it bounds the collateral.'))),
       stubPanel()));
 }
 
