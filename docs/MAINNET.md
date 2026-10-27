@@ -17,7 +17,7 @@ Trove has run on regtest and, once, on public Zcash testnet (26 Oct 2026). It ha
 
 | What | How | Result |
 |---|---|---|
-| Loan rules | `npm test` | 52 pass, 0 fail |
+| Loan rules | `npm test` | 55 pass, 0 fail |
 | Lock and three payouts, 2-of-3 | public testnet, 26 Oct 2026 | ran (4 txids in the README) |
 | One signer alone cannot sign | testnet run | no signature produced |
 | Overdraw refused | testnet stress pass: ask 0.5 from a 0.25 vault | refused (by the wallet's balance check, not by Trove's rules) |

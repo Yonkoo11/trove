@@ -300,3 +300,27 @@ ul.facts li:first-child { padding-top: 0; border-top: 0; }
 .terms-panel dd { margin: 0; text-align: right; font-weight: 500; }
 .foot-row { display: flex; gap: 24px; align-items: center; font-size: 14px; color: var(--muted); padding-top: 20px; padding-bottom: 20px; }
 .foot-row a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Lock: QR beside the amount on wide screens, stacked on phones */
+.lock-pay { display: grid; gap: 16px; margin-bottom: 16px; }
+@media (min-width: 560px) { .lock-pay { grid-template-columns: 200px minmax(0, 1fr); align-items: start; } }
+.qr-frame { width: 100%; max-width: 240px; padding: 8px; border: 1px solid var(--rule); border-radius: var(--r-control); background: #fff; }
+.qr { display: block; width: 100%; height: auto; }
+.lock-facts .result { margin-top: 0; }
+.lock-facts .label { margin: 0; }
+.addr { margin: 4px 0; font-size: 14px; line-height: 20px; color: var(--muted); word-break: break-all; }
+.addr b { color: var(--ink); font-weight: 600; }
+.lock .btn { margin-bottom: 24px; }
+.lock-link { margin-top: 0; }
+.lock-next { margin-top: 16px; }
+/* the checklist is what the borrower reads before sending, so it gets body size here */
+.lock-aside ul.facts li { font-size: 16px; line-height: 24px; }
+/* phones: amount and Open in wallet first; the QR is for scanning from a second device */
+@media (max-width: 559px) {
+  .lock { display: flex; flex-direction: column; }
+  .lock-pay { display: contents; }
+  .lock-facts { order: 1; margin-bottom: 16px; }
+  .lock .btn { order: 2; }
+  .qr-frame { order: 3; max-width: 200px; margin: 0 auto 24px; }
+  .lock > :not(.lock-pay):not(.btn):not(.error) { order: 4; }
+}

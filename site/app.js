@@ -1,6 +1,8 @@
 import { collateralValue, interestDue, ltvBps, ZAT_PER_ZEC } from './lib/money.mjs';
 import { DEFAULT_LIMITS } from './lib/defaults.mjs';
 import { TERM_S, REGTEST, interestMicro, buildTerms, encodeRequest, decodeRequest } from './lib/terms.mjs';
+import { paymentUri, zecAmount } from './lib/zip321.mjs';
+import { qrMatrix, qrPath } from './lib/qr.mjs';
 
 const NAME = 'Trove';
 const STORED = { micro: 1_240_743_930n, label: 'last stored close, 22 Oct 2026' };
@@ -72,6 +74,20 @@ const copyIcon = () => {
   p.setAttribute('d', 'M5.5 5.5V3.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.5'); p.setAttribute('stroke-linejoin', 'round');
   s.append(p); return s;
 };
+
+// a clipboard call can hang (pending permission prompt); give up after 1.5s and fall back to select
+function copyButton(label, text, field) {
+  const said = h('span', { class: 'sr', 'aria-live': 'polite' });
+  const btn = h('button', { class: 'share-btn', type: 'button' }, copyIcon(), h('span', {}, label));
+  btn.addEventListener('click', async () => {
+    const stall = new Promise((_, no) => setTimeout(() => no(new Error('clipboard stalled')), 1500));
+    try { await Promise.race([navigator.clipboard.writeText(text), stall]); btn.lastChild.textContent = 'Copied'; said.textContent = 'Copied'; }
+    catch { field.select(); btn.lastChild.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
+    clearTimeout(btn.t); btn.t = setTimeout(() => { btn.lastChild.textContent = label; said.textContent = ''; }, 2000);
+  });
+  field.addEventListener('focus', () => field.select());
+  return [btn, said];
+}
 
 // ---- gate 1 fields
 let gate1 = { status: 'loading' };
@@ -174,19 +190,11 @@ function borrowScreen() {
     const code = encodeRequest(q.zat, q.principal);
     const link = `${location.origin}${location.pathname}#/lend/${code}`;
     const field = h('input', { class: 'share-url', readonly: '', value: link, 'aria-label': 'Request link' });
-    const copied = h('span', { class: 'sr', 'aria-live': 'polite' });
-    const copy = h('button', { class: 'share-btn', type: 'button' }, copyIcon(), h('span', {}, 'Copy link'));
-    copy.addEventListener('click', async () => {
-      // a clipboard call can hang (pending permission prompt); give up after 1.5s and fall back to select
-      const stall = new Promise((_, no) => setTimeout(() => no(new Error('clipboard stalled')), 1500));
-      try { await Promise.race([navigator.clipboard.writeText(link), stall]); copy.lastChild.textContent = 'Copied'; copied.textContent = 'Link copied'; }
-      catch { field.select(); copy.lastChild.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
-      clearTimeout(copy.t); copy.t = setTimeout(() => { copy.lastChild.textContent = 'Copy link'; copied.textContent = ''; }, 2000);
-    });
-    field.addEventListener('focus', () => field.select());
+    const [copy, copied] = copyButton('Copy link', link, field);
     terms.replaceChildren(h('p', { class: 'share-title' }, 'Send this link to a lender'),
       h('div', { class: 'share' }, field, copy), copied,
-      h('p', { class: 'small' }, 'They open it to see your terms. It shows only the collateral and the dollar amount.'));
+      h('p', { class: 'small' }, 'They open it to see your terms. It shows only the collateral and the dollar amount.'),
+      h('a', { class: 'btn quiet lock-next', href: `#/lock/${code}` }, 'Next: lock your collateral'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
@@ -264,7 +272,7 @@ function requestPanel(code) {
         line('You earn if repaid', usd(interest)),
         line('Funding window', `${t.fundWindow / 60} minutes`)),
       h('p', { class: 'small' }, `Price used: ${usd(price.micro)}, ${price.label}.`),
-      h('p', { class: 'small' }, 'Funding from this page is not built yet. In the test runs the lock and payouts ran from scripts. ', h('a', { href: 'https://github.com/Yonkoo11/trove#how-a-loan-works' }, 'How a loan works')));
+      h('p', { class: 'small' }, 'The borrower locks the collateral first, from the ', h('a', { href: `#/lock/${raw}` }, 'lock page'), '. Paying the dollars from this page is not built yet; in the test runs it ran from scripts. ', h('a', { href: 'https://github.com/Yonkoo11/trove#how-a-loan-works' }, 'How a loan works')));
   };
   input.addEventListener('input', show);
   show();
@@ -276,6 +284,71 @@ function lendScreen(code = '') {
   return h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
     h('p', { class: 'lead' }, 'Open the link a borrower sent you, or paste it here to see the terms.'),
     req);
+}
+
+// ---- Lock
+// Public receive address of the shared test vault (2 of 3 keys) on Zcash testnet. Not a mainnet address.
+const TEST_VAULT = 'utest1f5ep3psrhsut7z7u3qqqjd7stndwlvjetsjt4s96kl00n8krz4qwupfwwqta695szfhar364xt472hnuyesgxxxwn0svtf4gzqp3unwa';
+
+function qrSvg(text) {
+  const m = qrMatrix(text);
+  if (!m) return null;
+  const NS = 'http://www.w3.org/2000/svg', n = String(m.length + 8);
+  const s = document.createElementNS(NS, 'svg');
+  for (const [k, v] of [['viewBox', `0 0 ${n} ${n}`], ['class', 'qr'], ['role', 'img'], ['aria-label', 'QR code of the payment link'], ['shape-rendering', 'crispEdges']]) s.setAttribute(k, v);
+  const bg = document.createElementNS(NS, 'rect');
+  bg.setAttribute('width', n); bg.setAttribute('height', n); bg.setAttribute('fill', '#fff');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', qrPath(m)); p.setAttribute('fill', '#000');
+  s.append(bg, p);
+  return s;
+}
+
+function lockScreen(code) {
+  const back = h('a', { class: 'back', href: '#/borrow' }, 'Back to borrow');
+  const r = decodeRequest(code);
+  code = r && encodeRequest(r.zat, r.principal);
+  const uri = r && paymentUri(TEST_VAULT, r.zat, code);
+  if (!uri) return h('section', { class: 'screen' }, back, h('h1', {}, r ? 'This request is too large to lock' : 'That lock link is broken'),
+    h('p', { class: 'lead' }, r ? 'Zcash payment links stop at 21,000,000 ZEC. Make a smaller request on the Borrow page.' : 'Make a request on the Borrow page and use the lock link it gives you.'));
+  const zec = zecAmount(r.zat);
+  const ltv = ltvBps(r.principal, r.zat, price.micro);
+  const priceLine = h('p', { class: 'small' }, `Limit checked with ZEC at ${usd(price.micro)}, ${price.label}.`);
+  if (ltv > BigInt(DEFAULT_LIMITS.maxStartLtvBps)) return h('section', { class: 'screen' }, back,
+    h('h1', {}, 'This request is over the limit'),
+    h('p', { class: 'lead' }, `At ${usd(price.micro)} per ZEC it opens at ${(Number(ltv) / 100).toFixed(2)}% loan to value, above the ${DEFAULT_LIMITS.maxStartLtvBps / 100}% limit. The rules would refuse it, so there is nothing to send. Make a smaller request on the Borrow page.`),
+    priceLine);
+  const field = h('input', { class: 'share-url', readonly: '', value: uri, 'aria-label': 'Payment link' });
+  const [copy, copied] = copyButton('Copy', uri, field);
+  const addr = h('input', { class: 'sr', readonly: '', tabindex: '-1', 'aria-hidden': 'true', value: TEST_VAULT });
+  const [copyAddr, addrSaid] = copyButton('Copy address', TEST_VAULT, addr);
+  copyAddr.className = 'link-btn';
+  const facts = [
+    'This vault is on Zcash testnet. Use a testnet wallet and test ZEC; a mainnet wallet will refuse the address.',
+    `Send the full ${zec} ZEC in one payment, within ${r.terms.fundWindow / 60} minutes. The rules do not open a loan on a short or late deposit.`,
+    'Getting a short or late deposit back needs two key holders to sign it to an address you give them. This page does not ask for one yet.',
+    'This page cannot see your deposit: the payment is shielded and the site has no server. Your wallet shows when it confirms.',
+    'One vault serves every test loan, so its three key holders can see each deposit and when it arrived.',
+  ];
+  return h('section', { class: 'screen' }, back,
+    h('h1', {}, 'Lock your collateral'),
+    h('p', { class: 'lead' }, `Send ${zec} test ZEC from your own wallet to the test vault. Scan the code or open the link in a Zcash testnet wallet.`),
+    h('div', { class: 'grid' },
+      h('div', { class: 'panel lock' },
+        h('div', { class: 'lock-pay' },
+          h('div', { class: 'qr-frame' }, qrSvg(uri)),
+          h('div', { class: 'lock-facts' },
+            h('div', { class: 'result' }, h('span', { class: 'label' }, 'Send exactly'), h('span', { class: 'big' }, `${zec} ZEC`)),
+            h('p', { class: 'label' }, 'To the test vault'),
+            h('p', { class: 'addr' }, h('b', {}, TEST_VAULT.slice(0, 10)), TEST_VAULT.slice(10, -10), h('b', {}, TEST_VAULT.slice(-10))),
+            h('p', { class: 'small' }, 'Check the bold start and end against your wallet before you send.'),
+            copyAddr, addr, addrSaid)),
+        h('a', { class: 'btn', href: uri }, 'Open in wallet'),
+        h('p', { class: 'share-title lock-link' }, 'Payment link'),
+        h('div', { class: 'share' }, field, copy), copied,
+        h('p', { class: 'small' }, `The link puts your request code (${code}) in the memo, so the key holders can tell which request the deposit is for.`), priceLine),
+      h('aside', { class: 'panel lock-aside', 'aria-label': 'Before you send' }, h('h2', {}, 'Before you send'),
+        h('ul', { class: 'facts' }, facts.map((x) => h('li', {}, x))))));
 }
 
 // ---- Limits
@@ -318,10 +391,11 @@ function route() {
   if (name === 'loans') view = loansScreen();
   else if (name === 'loan') view = loanScreen(decodeURIComponent(arg ?? ''));
   else if (name === 'lend') view = lendScreen(decodeURIComponent(arg ?? ''));
+  else if (name === 'lock') view = lockScreen(decodeURIComponent(arg ?? ''));
   else if (name === 'limits') view = limitsScreen();
   else view = borrowScreen();
   app.replaceChildren(view);
-  const cur = name === 'loan' ? 'loans' : ['loans', 'lend', 'limits'].includes(name) ? name : 'borrow';
+  const cur = name === 'loan' ? 'loans' : name === 'lock' ? 'borrow' : ['loans', 'lend', 'limits'].includes(name) ? name : 'borrow';
   document.querySelectorAll('.nav nav a').forEach((a) => {
     if (a.dataset.route === cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });

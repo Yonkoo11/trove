@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 52 pass](https://img.shields.io/badge/npm%20test-52%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
+![tests: 55 pass](https://img.shields.io/badge/npm%20test-55%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
 
 Live quote desk: https://trovedesk.xyz (no real funds).
 
@@ -12,13 +12,14 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 52 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 55 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
 | Fresh-context attacker review | 10 findings, 7 fixed with tests, A7 closed at the keeper's signing step, see below | reviewed, not proven |
 | Forged signature rejected by the node | a real FROST-signed vault spend with one bit flipped in a spend signature (first half, then second half) was posted to the node: both refused ("Orchard or Ironwood Halo2 proof verification failed", the node's single message for its batched proof and signature check), the untouched copy was accepted (`spike-scripts/forged-node.py`); the signer and builder also refuse tampered signatures earlier (`forged.sh`) | tested (regtest) |
 | Public testnet run | lock `ed25f049...63dd` then repay-style, default and abort payouts (`73f46ef8...dc48`, `37284cad...6994`, `ab24ccf6...f099`) on testnet.zec.rocks; a fresh view-only wallet synced from the public server shows the vault at 0.0497 ZEC, borrower 0.35, lender 0.10; one signer alone produced no signature. A second 0.2 ZEC lock, an overdraw refused (by the wallet's balance check) and two payouts in a row before change confirmed (`6da6b8bb...cad0`, `e5e6aa88...42a4`) also ran. `spike-scripts/testnet-setup.sh`, `build-signer-nu7.sh` | tested (testnet, one run; refund by name, keeper price signing and block-explorer confirmation not run) |
+| Lock page pays the vault from the borrower's own wallet | the QR on `#/lock/trove1.1000000.200` was read off a screenshot with zbarimg, parsed by the reference `zip321` crate (0.01 ZEC, testnet only), and paid by `zcash-devtool wallet pay --payment-uri`: tx `ca513ff2...bcf7`, the vault's view-only wallet rose by 1,000,000 zat and shows the memo `trove1.1000000.200`; `node scripts/qr-roundtrip.mjs` decodes 302 generated codes | tested (testnet, one payment; no phone wallet scanned it) |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
 | On-chain enforcement of who signs a payout | not claimed: any 2 of 3 keys can spend | not claimed |
 | Audit of the FROST crates or this code | none | not done |
@@ -40,7 +41,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 2. A lender opens the link, checks the terms, and funds the dollar side. The ZEC is locked in a shielded vault that needs two of three keys (borrower, lender, keeper).
 3. The policy fixes who gets paid. Repaid: borrower and lender. Defaulted or liquidated: lender and keeper. Aborted or refunded: borrower and keeper.
 
-The website covers step 1 and the terms check in step 2. Locking, funding and payouts are not on the site yet: in the regtest and testnet runs they ran from `scripts/lifecycle.mjs` and `spike-scripts/` (see Verify it yourself).
+The website covers step 1, the terms check in step 2, and the lock: `#/lock/<code>` shows a QR code and a ZIP 321 payment link to the shared testnet vault, so the borrower pays from their own wallet. Funding and payouts are not on the site yet: in the regtest and testnet runs they ran from `scripts/lifecycle.mjs` and `spike-scripts/` (see Verify it yourself).
 
 ## What each key can do
 
@@ -55,8 +56,9 @@ The vault release is shielded. Only transaction fees are visible; `site/gate1-vi
 ## Verify it yourself
 
 ```
-npm test                         # 52 pass, 0 fail
+npm test                         # 55 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
+node scripts/qr-roundtrip.mjs    # ok=302 bad=0 (needs zbarimg: brew install zbar)
 ```
 
 Chain runs need the local regtest stack (zebrad, zainod, frost-zcash-demo built under `spike/`, which is not committed); see `spike-scripts/gate2-setup.sh` then `node scripts/lifecycle.mjs A`. Expected: A ends `closed_repaid` with the borrower +99990000 zat, B ends `closed_defaulted` (lender +93328625, borrower +6641375), C ends `closed_aborted` with the borrower +99990000, D (deposit after the funding window) is refused by the rules, then refunded to the borrower +99990000 (`closed_aborted`). Those are the numbers from the 2026-10-25 runs on a freshly built chain (lifecycle B stalled once on a local tool, then passed on rerun).
