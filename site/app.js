@@ -177,7 +177,9 @@ function borrowScreen() {
     const copied = h('span', { class: 'sr', 'aria-live': 'polite' });
     const copy = h('button', { class: 'share-btn', type: 'button' }, copyIcon(), h('span', {}, 'Copy link'));
     copy.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(link); copy.lastChild.textContent = 'Copied'; copied.textContent = 'Link copied'; }
+      // a clipboard call can hang (pending permission prompt); give up after 1.5s and fall back to select
+      const stall = new Promise((_, no) => setTimeout(() => no(new Error('clipboard stalled')), 1500));
+      try { await Promise.race([navigator.clipboard.writeText(link), stall]); copy.lastChild.textContent = 'Copied'; copied.textContent = 'Link copied'; }
       catch { field.select(); copy.lastChild.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
       clearTimeout(copy.t); copy.t = setTimeout(() => { copy.lastChild.textContent = 'Copy link'; copied.textContent = ''; }, 2000);
     });
@@ -189,7 +191,8 @@ function borrowScreen() {
   });
   zec.addEventListener('input', update);
   bor.addEventListener('input', update);
-  priceListeners.add(update);
+  // the link holds only ZEC and dollars, so a new price keeps it unless the quote stops being valid
+  priceListeners.add(() => { const shown = !terms.hidden; update(); if (shown && q.error === undefined) terms.hidden = false; });
 
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
