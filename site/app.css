@@ -20,6 +20,8 @@
   --r-control: 6px;
   --r-panel: 12px;
   --r-stub: 2px;
+  --r-pill: 999px;
+  --r-round: 50%;
   --shadow: 0 1px 2px rgba(18, 21, 26, 0.08);
   --font: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -170,7 +172,7 @@ main { outline: none; }
   box-shadow: var(--shadow);
   padding: 24px;
 }
-.stub .kicker { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; background: var(--ground); font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted); margin-bottom: 12px; }
+.stub .kicker { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: var(--r-pill); background: var(--ground); font-size: 12px; line-height: 16px; font-weight: 500; color: var(--muted); margin-bottom: 12px; }
 .stub h2 { font-size: 20px; line-height: 28px; font-weight: 600; margin-bottom: 4px; }
 .stub .sub { color: var(--muted); font-size: 14px; line-height: 20px; margin-bottom: 16px; }
 .stub dl { margin: 0; border-top: 1px solid var(--rule); }
@@ -180,7 +182,7 @@ main { outline: none; }
 .stub .sealed { margin: 20px 0 0; padding: 16px; background: var(--ink); color: var(--paper); border-radius: var(--r-control); font-size: 14px; line-height: 20px; }
 .stub .sealed b { display: block; font-size: 16px; line-height: 24px; font-weight: 600; margin-bottom: 8px; }
 .stub .hidden-list { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
-.stub .hidden-list li { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); }
+.stub .hidden-list li { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--r-pill); background: rgba(255, 255, 255, 0.14); }
 .stub details { margin-top: 8px; font-size: 14px; line-height: 20px; }
 .stub .fields { margin: 4px 0 8px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; line-height: 16px; }
 .stub .fields li { border: 1px solid var(--rule); border-radius: var(--r-stub); padding: 2px 6px; }
@@ -207,7 +209,7 @@ td a { display: inline-flex; align-items: center; min-height: 44px; font-weight:
 @media (hover: hover) { td a:hover { text-decoration: underline; text-underline-offset: 4px; } }
 td a::after { content: "\2192"; margin-left: 6px; color: var(--muted); }
 td .stubline { display: block; font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 4px; }
-.tag { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--ground); font-size: 12px; line-height: 16px; font-weight: 500; }
+.tag { display: inline-block; padding: 2px 10px; border-radius: var(--r-pill); background: var(--ground); font-size: 12px; line-height: 16px; font-weight: 500; }
 .tag.good { color: var(--green); background: #E7F5EE; }
 .tag.bad { color: var(--red); background: #FCEBE9; }
 @media (max-width: 700px) {
@@ -253,11 +255,11 @@ footer.foot { width: 100%; }
 .hint:empty { display: none; }
 .stub summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 500; list-style: none; }
 .stub summary::-webkit-details-marker { display: none; }
-.stub summary::before { content: "+"; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--ground); font-size: 14px; line-height: 1; color: var(--muted); }
+.stub summary::before { content: "+"; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: var(--r-round); background: var(--ground); font-size: 14px; line-height: 1; color: var(--muted); }
 .stub details[open] summary::before { content: "\2212"; }
 .stub summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: var(--r-control); }
 .ticket > .hint { font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 8px; }
-.link-btn { border: 1px solid var(--rule); background: var(--paper); padding: 0 14px; margin: 0; min-height: 40px; border-radius: 999px; box-shadow: 0 1px 0 rgba(18,21,26,.06); transition: background var(--dur) var(--curve), border-color var(--dur) var(--curve); }
+.link-btn { border: 1px solid var(--rule); background: var(--paper); padding: 0 14px; margin: 0; min-height: 40px; border-radius: var(--r-pill); box-shadow: 0 1px 0 rgba(18,21,26,.06); transition: background var(--dur) var(--curve), border-color var(--dur) var(--curve); }
 @media (hover: hover) { .link-btn:not([disabled]):hover { text-decoration: none; background: var(--ground); border-color: var(--muted); } }
 .link-btn:active:not([disabled]) { transform: translateY(1px); }
 .link-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
@@ -265,7 +267,6 @@ footer.foot { width: 100%; }
 /* lists and cards on Lend and Limits */
 body { min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; }
-.num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 600; flex: none; }
 .panel > .num { margin-bottom: 12px; }
 ol.steps, ul.can, ul.facts { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 16px; }
 .step { display: flex; gap: 12px; align-items: flex-start; }
