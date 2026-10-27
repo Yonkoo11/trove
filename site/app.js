@@ -121,7 +121,7 @@ function quote(zecStr, borrowStr) {
 
 function borrowScreen() {
   const zec = h('input', { id: 'zec', inputmode: 'decimal', autocomplete: 'off', value: '1', 'aria-describedby': 'zec-hint' });
-  const bor = h('input', { id: 'bor', inputmode: 'decimal', autocomplete: 'off', value: '200', 'aria-describedby': 'bor-hint' });
+  const bor = h('input', { id: 'bor', inputmode: 'decimal', autocomplete: 'off', value: '200' });
   const err = h('p', { class: 'error', role: 'alert' });
   const big = h('span', { class: 'big' });
   const maxHint = h('p', { class: 'hint', id: 'zec-hint' });
@@ -182,7 +182,7 @@ function borrowScreen() {
 
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
-    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')), h('p', { class: 'hint', id: 'bor-hint' }, 'Paid out in dollars on another chain.')),
+    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD'))),
     err,
     h('div', { class: 'result' }, h('span', { class: 'label' }, 'You receive'), big),
     btn, terms, lines, h('div', { class: 'pricebar' }, priceNote, live));
@@ -193,7 +193,7 @@ function borrowScreen() {
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
     h('div', { class: 'grid' }, ticket,
       h('aside', { class: 'panel terms-panel', 'aria-label': 'Loan terms' }, h('h2', {}, 'Loan terms'),
-        h('dl', {}, [['Opens at up to', `${DEFAULT_LIMITS.maxStartLtvBps / 100}% of collateral value`], ['Liquidated at', `${DEFAULT_LIMITS.liqLtvBps / 100}% loan to value`], ['Interest', `${DEFAULT_LIMITS.aprBps / 100}% APR, fixed`], ['Term', '30 days, one payment at the end'], ['Liquidation penalty', `${DEFAULT_LIMITS.penaltyBps / 100}%`], ['Collateral', 'Shielded ZEC, 2 of 3 keys']].map(([k, v]) => h('div', { class: 'row' }, h('dt', {}, k), h('dd', {}, v)))))));
+        h('dl', {}, [['Opens at up to', `${DEFAULT_LIMITS.maxStartLtvBps / 100}% of collateral value`], ['Liquidated at', `${DEFAULT_LIMITS.liqLtvBps / 100}% loan to value`], ['Interest', `${DEFAULT_LIMITS.aprBps / 100}% APR, fixed`], ['Liquidation penalty', `${DEFAULT_LIMITS.penaltyBps / 100}%`], ['Collateral', 'Shielded ZEC, 2 of 3 keys']].map(([k, v]) => h('div', { class: 'row' }, h('dt', {}, k), h('dd', {}, v)))))));
 }
 
 // ---- Loans
@@ -205,7 +205,7 @@ function loansScreen() {
   for (const r of Object.values(RUNS)) {
     body.append(h('tr', {},
       h('td', { 'data-label': 'Run' }, h('a', { href: `#/loan/${r.id}` }, `${r.id}: ${r.name}`)),
-      h('td', { 'data-label': 'State' }, h('span', { class: `tag ${r.good ? 'good' : 'bad'}` }, r.tag)),
+      h('td', { 'data-label': 'State' }, h('span', { class: `tag${r.good ? ' good' : ''}` }, r.tag)),
       h('td', { 'data-label': 'Signers' }, r.signers),
       h('td', { 'data-label': 'Paid out' }, zatLine(r.paid))));
   }
