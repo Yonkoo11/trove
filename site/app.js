@@ -385,13 +385,15 @@ function limitsScreen() {
 
 // ---- router
 function route() {
-  const [, name = 'borrow', arg] = location.hash.replace(/^#/, '').split('/');
+  const [, name = 'borrow', raw = ''] = location.hash.replace(/^#/, '').split('/');
+  let arg = raw;
+  try { arg = decodeURIComponent(raw); } catch { /* a stray % in a pasted link: the screen reports it as broken */ }
   priceListeners.clear(); gateListeners.clear();
   let view;
   if (name === 'loans') view = loansScreen();
-  else if (name === 'loan') view = loanScreen(decodeURIComponent(arg ?? ''));
-  else if (name === 'lend') view = lendScreen(decodeURIComponent(arg ?? ''));
-  else if (name === 'lock') view = lockScreen(decodeURIComponent(arg ?? ''));
+  else if (name === 'loan') view = loanScreen(arg);
+  else if (name === 'lend') view = lendScreen(arg);
+  else if (name === 'lock') view = lockScreen(arg);
   else if (name === 'limits') view = limitsScreen();
   else view = borrowScreen();
   app.replaceChildren(view);
