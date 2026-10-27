@@ -82,7 +82,7 @@ function copyButton(label, text, field) {
   btn.addEventListener('click', async () => {
     const stall = new Promise((_, no) => setTimeout(() => no(new Error('clipboard stalled')), 1500));
     try { await Promise.race([navigator.clipboard.writeText(text), stall]); btn.lastChild.textContent = 'Copied'; said.textContent = 'Copied'; }
-    catch { field.select(); btn.lastChild.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
+    catch { field.select(); btn.lastChild.textContent = said.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
     clearTimeout(btn.t); btn.t = setTimeout(() => { btn.lastChild.textContent = label; said.textContent = ''; }, 2000);
   });
   field.addEventListener('focus', () => field.select());
@@ -320,7 +320,9 @@ function lockScreen(code) {
     priceLine);
   const field = h('input', { class: 'share-url', readonly: '', value: uri, 'aria-label': 'Payment link' });
   const [copy, copied] = copyButton('Copy', uri, field);
-  const addr = h('input', { class: 'sr', readonly: '', tabindex: '-1', 'aria-hidden': 'true', value: TEST_VAULT });
+  // The fallback selects the address as shown: Chrome copies nothing from a visually hidden input.
+  const addr = h('p', { class: 'addr' }, h('b', {}, TEST_VAULT.slice(0, 10)), TEST_VAULT.slice(10, -10), h('b', {}, TEST_VAULT.slice(-10)));
+  addr.select = () => getSelection().selectAllChildren(addr);
   const [copyAddr, addrSaid] = copyButton('Copy address', TEST_VAULT, addr);
   copyAddr.className = 'link-btn';
   const facts = [
@@ -340,9 +342,9 @@ function lockScreen(code) {
           h('div', { class: 'lock-facts' },
             h('div', { class: 'result' }, h('span', { class: 'label' }, 'Send exactly'), h('span', { class: 'big' }, `${zec} ZEC`)),
             h('p', { class: 'label' }, 'To the test vault'),
-            h('p', { class: 'addr' }, h('b', {}, TEST_VAULT.slice(0, 10)), TEST_VAULT.slice(10, -10), h('b', {}, TEST_VAULT.slice(-10))),
+            addr,
             h('p', { class: 'small' }, 'Check the bold start and end against your wallet before you send.'),
-            copyAddr, addr, addrSaid)),
+            copyAddr, addrSaid)),
         h('a', { class: 'btn', href: uri }, 'Open in wallet'),
         h('p', { class: 'share-title lock-link' }, 'Payment link'),
         h('div', { class: 'share' }, field, copy), copied,
