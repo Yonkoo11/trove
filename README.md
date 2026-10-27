@@ -51,8 +51,7 @@ trove/
 ├── scripts/   lifecycle.mjs (regtest runs A, B, C, D), backtest.mjs
 ├── site/      the app: Borrow, Loans, Lend, Limits (static, no build step)
 ├── test/      unit and random-sequence stress tests
-├── docs/      gate1-viewer-fields.json, what a chain viewer sees
-├── design/    audience, judge, direction and build brief
-├── brand/     the logo: brief, art direction, 9 candidates, critique, exports
-└── company/   THESIS.md
+├── docs/      MAINNET.md (what must be true before real funds), what a chain viewer sees
+├── spike-scripts/  regtest and testnet setup, signer build, forged-signature check
+└── brand/     logo exports
 ```
