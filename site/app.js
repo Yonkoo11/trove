@@ -48,14 +48,22 @@ const priceListeners = new Set();
 async function loadPrice() {
   try {
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=usd&precision=6', { signal: AbortSignal.timeout(4000) });
-    if (!r.ok) return;
+    if (!r.ok) return false;
     const usdPrice = (await r.json())?.zcash?.usd;
     const m = parseUnits(String(usdPrice), 6);
-    if (m === null || m * 10n < STORED.micro || m > STORED.micro * 10n) return;
-    price = { micro: m, label: 'Live read from CoinGecko', live: true };
+    if (m === null || m * 10n < STORED.micro || m > STORED.micro * 10n) return false;
+    price = { micro: m, label: 'live from CoinGecko', live: true };
     priceListeners.forEach((f) => f());
-  } catch { /* stay on the stored close */ }
+    return true;
+  } catch { return false; /* stay on the stored close */ }
 }
+const refreshIcon = () => {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('width', '16'); s.setAttribute('height', '16'); s.setAttribute('viewBox', '0 0 16 16'); s.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', 'M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3h-3'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.5'); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+  s.append(p); return s;
+};
 
 // ---- gate 1 fields
 let gate1 = { status: 'loading' };
@@ -68,23 +76,23 @@ fetch('gate1-viewer-fields.json').then((r) => { if (!r.ok) throw new Error(r.sta
 function stubPanel() {
   const box = h('aside', { class: 'stub', 'aria-label': 'What the chain shows' });
   const draw = () => {
-    box.replaceChildren(h('h2', {}, 'What the chain shows'),
-      h('p', { class: 'sub' }, 'A public viewer looking at a vault release.'));
+    box.replaceChildren(h('span', { class: 'kicker' }, 'Public view'), h('h2', {}, 'What the chain shows'),
+      h('p', { class: 'sub' }, 'What a stranger sees when the vault pays out.'));
     if (gate1.status === 'loading') { box.append(h('p', {}, 'Loading the recorded fields…')); return; }
     if (gate1.status === 'error') { box.append(h('p', { class: 'error' }, 'Could not load gate1-viewer-fields.json.')); return; }
     const d = gate1.data;
     const rows = [
-      ['Fee (value balance)', `${fmt(d.valueBalanceZat)} zat`],
-      ['Transparent in', String(d.transparent_in_out?.[0] ?? 0)],
-      ['Transparent out', String(d.transparent_in_out?.[1] ?? 0)],
+      ['Network fee', `${(Number(d.valueBalanceZat) / 1e8).toFixed(4)} ZEC`],
+      ['Public inputs', String(d.transparent_in_out?.[0] ?? 0)],
+      ['Public outputs', String(d.transparent_in_out?.[1] ?? 0)],
       ['Shielded actions', String(d.ironwood_actions)],
     ];
     const dl = h('dl');
-    for (const [k, v] of rows) dl.append(h('div', { class: 'row' }, h('dt', {}, k), h('span', { class: 'lead-dots' }), h('dd', {}, v)));
-    box.append(dl, h('p', { class: 'sealed' }, 'Sealed: who sent it, who received it, how much.'),
+    for (const [k, v] of rows) dl.append(h('div', { class: 'row' }, h('dt', {}, k), h('dd', {}, v)));
+    box.append(dl, h('div', { class: 'sealed' }, h('b', {}, 'Hidden from everyone else'), h('ul', { class: 'hidden-list' }, ['Sender', 'Receiver', 'Amount'].map((x) => h('li', {}, x)))),
       h('details', {}, h('summary', {}, 'Raw fields a viewer can read on each action'),
         h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f)))),
-      h('p', { class: 'note' }, `Checked on one vault release (lender and keeper signed): ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Not the deposit. The stablecoin leg is on another chain and is public.`));
+      h('p', { class: 'note' }, `Checked on one vault release (lender and keeper signed): ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Not the deposit. The dollar side of the loan runs on another chain and is public.`));
   };
   gateListeners.add(draw); draw();
   return box;
@@ -118,7 +126,13 @@ function borrowScreen() {
   const big = h('span', { class: 'big' });
   const maxHint = h('p', { class: 'hint', id: 'zec-hint' });
   const priceNote = h('p', { class: 'small' });
-  const live = h('button', { class: 'btn quiet', type: 'button', onclick: () => { live.disabled = true; loadPrice(); } }, 'Use live price (your browser asks CoinGecko)');
+  const liveLabel = h('span', {}, 'Check live price');
+  const live = h('button', { class: 'link-btn', type: 'button', onclick: async () => {
+    live.disabled = true; liveLabel.textContent = 'Checking…';
+    const ok = await loadPrice();
+    live.disabled = false; liveLabel.textContent = 'Check live price';
+    if (!ok) priceNote.textContent = `ZEC at ${usd(price.micro)}. Live price unavailable, using ${price.label}.`;
+  } }, refreshIcon(), liveLabel);
   const lines = h('ul', { class: 'lines' });
   const say = h('div', { class: 'say' });
   const terms = h('div', { class: 'terms', hidden: '' });
@@ -128,7 +142,7 @@ function borrowScreen() {
   const line = (k, v) => h('li', {}, h('span', {}, k), h('span', {}, v));
   const update = () => {
     q = quote(zec.value, bor.value);
-    priceNote.textContent = `ZEC price used: ${usd(price.micro)}. ${price.label}.`;
+    priceNote.replaceChildren(document.createTextNode('ZEC at '), h('b', {}, usd(price.micro)), document.createTextNode(` · ${price.label}`));
     terms.hidden = true;
     if (q.error !== undefined) {
       err.textContent = q.error; btn.disabled = true;
@@ -143,8 +157,9 @@ function borrowScreen() {
       line('You can borrow up to', usd(q.maxMicro)),
       line('Loan to value', `${(Number(q.ltv) / 100).toFixed(2)}%`),
       line('Liquidation price', `${usd(q.liq)} per ZEC`),
-      line(`Interest at ${apr}% APR, 30 days`, usd(q.interest)),
-      line('Total to repay', usd(q.total)));
+      line('Term', '30 days, fixed'),
+      line(`Interest at ${apr}% APR`, usd(q.interest)),
+      Object.assign(line('Total to repay', usd(q.total)), { className: 'total' }));
     say.replaceChildren(
       h('p', {}, `You lock ${zec.value.trim()} ZEC in a vault. Nobody can spend it alone: any 2 of 3 keys (you, the lender, the keeper) are needed.`),
       h('p', {}, `If you repay ${usd(q.total)} within 30 days, you and the lender sign the collateral back to you.`),
@@ -173,10 +188,10 @@ function borrowScreen() {
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
     h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')), h('p', { class: 'hint', id: 'bor-hint' }, 'Public on the other chain; it bounds your collateral.')),
-    h('div', { class: 'field' }, h('span', {}, 'Term'), h('p', {}, '30 days, fixed')),
     err,
     h('div', { class: 'result' }, h('span', { class: 'label' }, 'You receive'), big),
-    btn, terms, lines, priceNote, live);
+    btn, terms, lines, h('div', { class: 'pricebar' }, priceNote, live),
+    h('p', { class: 'hint' }, 'The live check asks CoinGecko from your browser. Nothing else leaves this page.'));
   update();
 
   return h('section', { class: 'screen' },
