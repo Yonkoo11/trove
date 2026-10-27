@@ -36,9 +36,11 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 ## How a loan works
 
-1. The borrower enters ZEC and a dollar amount. The page makes a request code that holds only those two numbers.
-2. A lender pastes the code, checks the terms, and funds the dollar side. The ZEC is locked in a shielded vault that needs two of three keys (borrower, lender, keeper).
+1. The borrower enters ZEC and a dollar amount. The page makes a request link that holds only those two numbers.
+2. A lender opens the link, checks the terms, and funds the dollar side. The ZEC is locked in a shielded vault that needs two of three keys (borrower, lender, keeper).
 3. The policy fixes who gets paid. Repaid: borrower and lender. Defaulted or liquidated: lender and keeper. Aborted or refunded: borrower and keeper.
+
+The website covers step 1 and the terms check in step 2. Locking, funding and payouts are not on the site yet: in the regtest and testnet runs they ran from `scripts/lifecycle.mjs` and `spike-scripts/` (see Verify it yourself).
 
 ## What each key can do
 

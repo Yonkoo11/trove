@@ -46,6 +46,8 @@ body { -webkit-font-smoothing: antialiased; }
 
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
 .small { font-size: 14px; line-height: 20px; color: var(--muted); }
+.lines + .small { margin: 8px 0 0; }
+.small + .small { margin: 12px 0 0; }
 .label { font-size: 14px; line-height: 20px; color: var(--muted); }
 
 

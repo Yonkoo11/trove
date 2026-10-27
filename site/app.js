@@ -178,7 +178,7 @@ function borrowScreen() {
     const copy = h('button', { class: 'share-btn', type: 'button' }, copyIcon(), h('span', {}, 'Copy link'));
     copy.addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(link); copy.lastChild.textContent = 'Copied'; copied.textContent = 'Link copied'; }
-      catch { field.select(); copy.lastChild.textContent = 'Press Ctrl+C'; }
+      catch { field.select(); copy.lastChild.textContent = /Mac|iP/.test(navigator.platform) ? 'Press ⌘C' : 'Press Ctrl+C'; }
       clearTimeout(copy.t); copy.t = setTimeout(() => { copy.lastChild.textContent = 'Copy link'; copied.textContent = ''; }, 2000);
     });
     field.addEventListener('focus', () => field.select());
@@ -239,13 +239,13 @@ function loanScreen(id) {
 
 // ---- Lend
 function requestPanel(code) {
-  const input = h('input', { id: 'code', autocomplete: 'off', spellcheck: 'false', value: code, placeholder: 'trove1.…' });
+  const input = h('input', { id: 'code', autocomplete: 'off', spellcheck: 'false', value: code, placeholder: 'https://trovedesk.xyz/#/lend/trove1.…' });
   const out = h('div', {});
   const show = () => {
-    const raw = input.value.trim();
+    const raw = input.value.trim().replace(/^.*#\/lend\//, '');
     if (!raw) { out.replaceChildren(); return; }
     const r = decodeRequest(raw);
-    if (!r) { out.replaceChildren(h('p', { class: 'error', role: 'alert' }, 'That is not a Trove request code. It looks like trove1.<zatoshis>.<cents>.')); return; }
+    if (!r) { out.replaceChildren(h('p', { class: 'error', role: 'alert' }, 'That is not a Trove request link. Paste the whole link the borrower sent you.')); return; }
     const t = r.terms, zecAmt = Number(r.zat) / 1e8, ltv = ltvBps(r.principal, r.zat, price.micro);
     const interest = interestMicro(r.principal);
     const over = ltv > BigInt(DEFAULT_LIMITS.maxStartLtvBps);
@@ -260,17 +260,18 @@ function requestPanel(code) {
         line('Liquidation price', `${usd(liq)} per ZEC`),
         line('You earn if repaid', usd(interest)),
         line('Funding window', `${t.fundWindow / 60} minutes`)),
-      h('p', { class: 'small' }, `Price used: ${usd(price.micro)}, ${price.label}.`));
+      h('p', { class: 'small' }, `Price used: ${usd(price.micro)}, ${price.label}.`),
+      h('p', { class: 'small' }, 'Funding from this page is not built yet. In the test runs the lock and payouts ran from scripts. ', h('a', { href: 'https://github.com/Yonkoo11/trove#how-a-loan-works' }, 'How a loan works')));
   };
   input.addEventListener('input', show);
   show();
   return h('div', { class: 'panel', style: 'margin-bottom:16px' },
-    h('label', { class: 'field', for: 'code' }, h('span', {}, 'Borrower’s request code'), h('div', { class: 'input' }, input)), out);
+    h('label', { class: 'field', for: 'code' }, h('span', {}, 'Borrower’s request link'), h('div', { class: 'input' }, input)), out);
 }
 function lendScreen(code = '') {
   const req = requestPanel(code);
   return h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
-    h('p', { class: 'lead' }, 'Paste a borrower’s request code to see the terms.'),
+    h('p', { class: 'lead' }, 'Open the link a borrower sent you, or paste it here to see the terms.'),
     req);
 }
 
