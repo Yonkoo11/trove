@@ -34,6 +34,22 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 - A7 (a lender holding back a newer price and submitting an older one still inside `maxPriceAge`): a default is now a two-step event. The lender declares it, then the keeper's `keeperCosign` step takes its own newer signed reading, refuses a price default if that reading puts the loan back under the liquidation line, and stores the split at the keeper's price. Payouts are only accepted after that step. Tested in `test/loan.test.mjs` and run on chain in lifecycle B. It is the keeper's rule, not something the chain enforces; a keeper that colludes with the lender defeats it.
 - Still open: a payment above what the loan needs is flagged as a refund owed (`excess` effect), but the refund itself is a manual step on the other chain; one shared vault wallet serves every loan on regtest.
 
+## How a loan works
+
+1. The borrower enters ZEC and a dollar amount. The page makes a request code that holds only those two numbers.
+2. A lender pastes the code, checks the terms, and funds the dollar side. The ZEC is locked in a shielded vault that needs two of three keys (borrower, lender, keeper).
+3. The policy fixes who gets paid. Repaid: borrower and lender. Defaulted or liquidated: lender and keeper. Aborted or refunded: borrower and keeper.
+
+## What each key can do
+
+- **Borrower:** repay and get the ZEC back, or refund an unfunded request.
+- **Lender:** with the keeper, take the ZEC after a default or liquidation.
+- **Keeper:** signs the price and co-signs defaults and refunds. It cannot move funds alone.
+
+## What the chain shows
+
+The vault release is shielded. Only transaction fees are visible; `site/gate1-viewer-fields.json` lists the fields a viewer sees. The dollar payment on the other chain and the keeper's price reading are public.
+
 ## Verify it yourself
 
 ```

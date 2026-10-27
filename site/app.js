@@ -134,7 +134,6 @@ function borrowScreen() {
     if (!ok) priceNote.textContent = `ZEC at ${usd(price.micro)}. Live price unavailable, using ${price.label}.`;
   } }, refreshIcon(), liveLabel);
   const lines = h('ul', { class: 'lines' });
-  const say = h('div', { class: 'say' });
   const terms = h('div', { class: 'terms', hidden: '' });
   const btn = h('button', { class: 'btn', type: 'button' }, 'Request this loan');
   let q = null;
@@ -146,7 +145,7 @@ function borrowScreen() {
     terms.hidden = true;
     if (q.error !== undefined) {
       err.textContent = q.error; btn.disabled = true;
-      big.textContent = '$0.00'; lines.replaceChildren(); say.replaceChildren(); maxHint.textContent = '';
+      big.textContent = '$0.00'; lines.replaceChildren(); maxHint.textContent = '';
       return;
     }
     err.textContent = ''; btn.disabled = false;
@@ -160,10 +159,6 @@ function borrowScreen() {
       line('Term', '30 days, fixed'),
       line(`Interest at ${apr}% APR`, usd(q.interest)),
       Object.assign(line('Total to repay', usd(q.total)), { className: 'total' }));
-    say.replaceChildren(
-      h('p', {}, `You lock ${zec.value.trim()} ZEC in a vault. Nobody can spend it alone: any 2 of 3 keys (you, the lender, the keeper) are needed.`),
-      h('p', {}, `If you repay ${usd(q.total)} within 30 days, you and the lender sign the collateral back to you.`),
-      h('p', {}, `If the price falls to ${usd(q.liq)} per ZEC or you miss the term plus one day of grace, the lender and keeper sign, and the lender takes what is owed plus a ${DEFAULT_LIMITS.penaltyBps / 100}% penalty.`));
   };
 
   btn.addEventListener('click', () => {
@@ -178,7 +173,7 @@ function borrowScreen() {
     };
     terms.replaceChildren(h('p', { class: 'label' }, 'Your loan request'), h('pre', {}, code), 
       h('div', { class: 'row-btns' }, copyBtn('Copy request code', code), copyBtn('Copy link for the lender', link)),
-      h('p', { class: 'small' }, 'Send this to a lender. It holds only the collateral and the dollar amount; rates and limits are the shared ones. Nothing is sent from this page, and the keeper’s key is added when the loan opens.'));
+      h('p', { class: 'small' }, 'Send this to a lender. It holds only the collateral and the dollar amount.'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
@@ -187,26 +182,23 @@ function borrowScreen() {
 
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
-    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')), h('p', { class: 'hint', id: 'bor-hint' }, 'Public on the other chain; it bounds your collateral.')),
+    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')), h('p', { class: 'hint', id: 'bor-hint' }, 'Paid out in dollars on another chain.')),
     err,
     h('div', { class: 'result' }, h('span', { class: 'label' }, 'You receive'), big),
-    btn, terms, lines, h('div', { class: 'pricebar' }, priceNote, live),
-    h('p', { class: 'hint' }, 'The live check asks CoinGecko from your browser. Nothing else leaves this page.'));
+    btn, terms, lines, h('div', { class: 'pricebar' }, priceNote, live));
   update();
 
   return h('section', { class: 'screen' },
     h('h1', {}, 'Borrow dollars against your ZEC, with the collateral held in a shielded vault.'),
     h('p', { class: 'lead' }, 'A fixed 30-day loan. The dollars arrive on another chain, where they are visible.'),
-    h('div', { class: 'grid' }, ticket, stubPanel()),
-    h('dl', { class: 'market', style: 'margin-top:24px' }, [['Opens at up to', `${DEFAULT_LIMITS.maxStartLtvBps / 100}%`, 'of collateral value'], ['Liquidated at', `${DEFAULT_LIMITS.liqLtvBps / 100}%`, 'loan to value'], ['Interest', `${DEFAULT_LIMITS.aprBps / 100}% APR`, 'fixed for the term'], ['Term', '30 days', 'one payment at the end']].map(([k, v, n]) => h('div', {}, h('dt', {}, k), h('dd', {}, v), h('span', {}, n)))),
-    h('ul', { class: 'proof' }, [['52', 'tests passing'], ['4', 'recorded loan runs'], ['336', 'loans back-tested, 0 bad debt'], ['Testnet', 'lock + 3 payouts, 26 Oct']].map(([n, t]) => h('li', {}, h('strong', {}, n), h('span', {}, t)))),
-    say);
+    h('div', { class: 'grid' }, ticket,
+      h('aside', { class: 'panel terms-panel', 'aria-label': 'Loan terms' }, h('h2', {}, 'Loan terms'),
+        h('dl', {}, [['Opens at up to', `${DEFAULT_LIMITS.maxStartLtvBps / 100}% of collateral value`], ['Liquidated at', `${DEFAULT_LIMITS.liqLtvBps / 100}% loan to value`], ['Interest', `${DEFAULT_LIMITS.aprBps / 100}% APR, fixed`], ['Term', '30 days, one payment at the end'], ['Liquidation penalty', `${DEFAULT_LIMITS.penaltyBps / 100}%`], ['Collateral', 'Shielded ZEC, 2 of 3 keys']].map(([k, v]) => h('div', { class: 'row' }, h('dt', {}, k), h('dd', {}, v)))))));
 }
 
 // ---- Loans
 const zecStr = (z) => (Number(z) / 1e8).toFixed(4).replace(/\.?0+$/, '');
 const zatLine = (paid) => paid.map(([who, z]) => `${who} +${zecStr(z)} ZEC`).join(', ');
-const stubNote = 'Fee-only view checked on one vault release; each run’s own transaction is not stored.';
 
 function loansScreen() {
   const body = h('tbody');
@@ -218,10 +210,9 @@ function loansScreen() {
       h('td', { 'data-label': 'Paid out' }, zatLine(r.paid))));
   }
   return h('section', { class: 'screen' }, h('h1', {}, 'Loans'),
-    h('p', { class: 'lead' }, 'Four runs on a local test chain. No real funds moved.'),
+    h('p', { class: 'lead' }, 'Recorded test runs.'),
     h('div', { class: 'panel' }, h('table', {},
-      h('thead', {}, h('tr', {}, ['Run', 'State', 'Signers', 'Paid out'].map((c) => h('th', {}, c)))), body)),
-    h('p', { class: 'small say' }, stubNote));
+      h('thead', {}, h('tr', {}, ['Run', 'State', 'Signers', 'Paid out'].map((c) => h('th', {}, c)))), body)),);
 }
 
 function loanScreen(id) {
@@ -232,11 +223,7 @@ function loanScreen(id) {
     h('div', { class: 'cols' },
       h('div', { class: 'panel' }, h('h3', {}, 'State timeline'), h('ol', { class: 'timeline' }, r.path.map((s) => h('li', {}, s.replaceAll('_', ' ')))),
         h('p', { class: 'small', style: 'margin-top:16px' }, `Signers at the end: ${r.signers}. ${r.end}`)),
-      h('div', { class: 'stack' },
-        h('div', { class: 'panel' }, h('h3', {}, 'Paid out'), h('p', {}, zatLine(r.paid))),
-        h('div', { class: 'panel' }, h('h3', {}, 'What stays public'),
-          h('p', { class: 'small' }, 'The dollar payment on the other chain, and the keeper’s price reading. The vault release hides amounts and addresses. The loan amount in dollars is public, and with the price it bounds the collateral.'))),
-      stubPanel()));
+      h('div', { class: 'panel' }, h('h3', {}, 'Paid out'), h('p', {}, zatLine(r.paid)))));
 }
 
 // ---- Lend
@@ -271,23 +258,9 @@ function requestPanel(code) {
 }
 function lendScreen(code = '') {
   const req = requestPanel(code);
-  const step = (n, t, d) => h('li', { class: 'step' }, h('span', { class: 'num' }, String(n)), h('div', {}, h('strong', {}, t), h('p', {}, d)));
-  const can = (who, what) => h('li', {}, h('span', { class: 'tag' }, who), h('p', {}, what));
   return h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
-    h('p', { class: 'lead' }, 'Fund a borrower in dollars and hold one of three keys to their ZEC vault.'),
-    req,
-    h('div', { class: 'cols two' },
-      h('div', { class: 'panel' }, h('h3', {}, 'How it works'),
-        h('ol', { class: 'steps' },
-          step(1, 'Get a request code', 'The borrower sends you a code or link from the Borrow screen. Paste it above.'),
-          step(2, 'Check the terms', 'The screen shows the amount, the collateral and the price at which it would be sold.'),
-          step(3, 'Pay and hold your key', 'You pay the dollars, then keep your key until the loan closes.'))),
-      h('div', { class: 'panel' }, h('h3', {}, 'What your key can do'),
-        h('ul', { class: 'can' },
-          can('Alone', 'Nothing. Every release needs two keys.'),
-          can('With the borrower', 'Release the collateral back after repayment.'),
-          can('With the keeper', 'Take the collateral if the price falls past the liquidation line or the term and grace period end.'),
-          can('Never', 'Stop the borrower and keeper from cancelling the loan before you pay.')))));
+    h('p', { class: 'lead' }, 'Paste a borrower’s request code to see the terms.'),
+    req);
 }
 
 // ---- Limits
@@ -312,12 +285,14 @@ function limitsScreen() {
   ];
   const stat = (n, label) => h('div', { class: 'stat' }, h('strong', {}, n), h('span', {}, label));
   return h('section', { class: 'screen' }, h('h1', {}, 'Limits'),
-    h('p', { class: 'lead' }, 'What Trove does not hide, and what it cannot stop.'),
+    h('p', { class: 'lead' }, 'Risks, and what is visible on each side.'),
     h('div', { class: 'panel' }, h('h3', {}, 'Back-test'),
       h('div', { class: 'stats' }, stat('336', 'thirty-day loans'), stat('11%', 'liquidated'), stat('0', 'bad debt')),
       h('p', { class: 'small' }, 'Run over 365 daily closes at the 40% opening and 70% liquidation limits.')),
-    h('div', { class: 'cols' }, groups.map(([t, items], i) =>
-      h('div', { class: 'panel' }, h('span', { class: 'num' }, String(i + 1)), h('h3', {}, t), h('ul', { class: 'facts' }, items.map((x) => h('li', {}, x)))))));
+    h('div', { class: 'cols' }, groups.map(([t, items]) =>
+      h('div', { class: 'panel' }, h('h3', {}, t), h('ul', { class: 'facts' }, items.map((x) => h('li', {}, x)))))),
+    stubPanel(),
+    h('p', { class: 'small' }, 'The price check on the Borrow page asks CoinGecko from your browser. Nothing else leaves the page.'));
 }
 
 // ---- router

@@ -293,3 +293,11 @@ ul.facts li:first-child { padding-top: 0; border-top: 0; }
 @media (hover: hover) { .nav nav a:hover { background: none; color: var(--ink); } }
 @media (max-width: 480px) { header.nav { gap: 8px; padding: 0 8px; } .brand span { display: none; } }
 .cols .panel ul.facts, .cols .panel ul.can { padding-left: 0; }
+
+.terms-panel dl { margin: 0; }
+.terms-panel .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--rule); }
+.terms-panel .row:first-child { border-top: 0; }
+.terms-panel dt { color: #5E6670; }
+.terms-panel dd { margin: 0; text-align: right; font-weight: 500; }
+.foot-row { display: flex; gap: 24px; align-items: center; font-size: 14px; color: #5E6670; padding: 20px 0; }
+.foot-row a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
