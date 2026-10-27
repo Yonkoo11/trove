@@ -65,6 +65,14 @@ const refreshIcon = () => {
   s.append(p); return s;
 };
 
+const copyIcon = () => {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('width', '16'); s.setAttribute('height', '16'); s.setAttribute('viewBox', '0 0 16 16'); s.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.setAttribute('d', 'M5.5 5.5V3.5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M3.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.5'); p.setAttribute('stroke-linejoin', 'round');
+  s.append(p); return s;
+};
+
 // ---- gate 1 fields
 let gate1 = { status: 'loading' };
 const gateListeners = new Set();
@@ -135,7 +143,7 @@ function borrowScreen() {
   } }, refreshIcon(), liveLabel);
   const lines = h('ul', { class: 'lines' });
   const terms = h('div', { class: 'terms', hidden: '' });
-  const btn = h('button', { class: 'btn', type: 'button' }, 'Request this loan');
+  const btn = h('button', { class: 'btn', type: 'button' }, 'Create request link');
   let q = null;
 
   const line = (k, v) => h('li', {}, h('span', {}, k), h('span', {}, v));
@@ -165,15 +173,18 @@ function borrowScreen() {
     if (!q || q.error !== undefined) return;
     const code = encodeRequest(q.zat, q.principal);
     const link = `${location.origin}${location.pathname}#/lend/${code}`;
-    const copyBtn = (label, text) => {
-      const b = h('button', { class: 'btn quiet', type: 'button', onclick: async () => {
-        try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; } catch { b.textContent = 'Copy failed, select the text'; }
-      } }, label);
-      return b;
-    };
-    terms.replaceChildren(h('p', { class: 'label' }, 'Your loan request'), h('pre', {}, code), 
-      h('div', { class: 'row-btns' }, copyBtn('Copy request code', code), copyBtn('Copy link for the lender', link)),
-      h('p', { class: 'small' }, 'Send this to a lender. It holds only the collateral and the dollar amount.'));
+    const field = h('input', { class: 'share-url', readonly: '', value: link, 'aria-label': 'Request link' });
+    const copied = h('span', { class: 'sr', 'aria-live': 'polite' });
+    const copy = h('button', { class: 'share-btn', type: 'button' }, copyIcon(), h('span', {}, 'Copy link'));
+    copy.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(link); copy.lastChild.textContent = 'Copied'; copied.textContent = 'Link copied'; }
+      catch { field.select(); copy.lastChild.textContent = 'Press Ctrl+C'; }
+      clearTimeout(copy.t); copy.t = setTimeout(() => { copy.lastChild.textContent = 'Copy link'; copied.textContent = ''; }, 2000);
+    });
+    field.addEventListener('focus', () => field.select());
+    terms.replaceChildren(h('p', { class: 'share-title' }, 'Send this link to a lender'),
+      h('div', { class: 'share' }, field, copy), copied,
+      h('p', { class: 'small' }, 'They open it to see your terms. It shows only the collateral and the dollar amount.'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
