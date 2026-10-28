@@ -446,7 +446,7 @@ function limitsScreen() {
     ['What is unproven', [
       'The signing code is unaudited.',
       'The vault key uses an experimental Zcash feature that is not merged and that its own reviewer says will be removed (zcash/orchard#475). Funds in such a vault could become unreachable.',
-      'Run on a local test chain on 20 and 22 Oct 2026, and once on public Zcash testnet on 26 Oct 2026: one lock and three payouts, and one signer alone could not move funds. Not run on mainnet.',
+      'Run on a local test chain on 20 and 22 Oct 2026, and on public Zcash testnet from 26 to 28 Oct 2026: three locks, four 2-of-3 payouts and one full loan (locked, dollars paid, repaid, released), and one signer alone could not move funds. Not run on mainnet.',
     ]],
   ];
   const stat = (n, label) => h('div', { class: 'stat' }, h('strong', {}, n), h('span', {}, label));

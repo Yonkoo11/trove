@@ -1,6 +1,6 @@
 # Mainnet
 
-Trove has run on regtest and, once, on public Zcash testnet (26 Oct 2026). It has not run on mainnet and should not yet. This page says why, what was checked, and what has to be true before a first real-money test.
+Trove has run on regtest and on public Zcash testnet (26 to 28 Oct 2026: three locks, four 2-of-3 payouts, one full loan). It has not run on mainnet and should not yet. This page says why, what was checked, and what has to be true before a first real-money test.
 
 ## Blockers
 
@@ -17,9 +17,9 @@ Trove has run on regtest and, once, on public Zcash testnet (26 Oct 2026). It ha
 
 | What | How | Result |
 |---|---|---|
-| Loan rules, pause, cap and payment checks | `npm test` | 127 pass, 0 fail |
+| Loan rules, pause, cap and payment checks | `npm test` | 129 pass, 0 fail |
 | Malformed payment data | 27 bad inputs plus 2000 random balance strings | refused, never a crash or an overpay |
-| Lock and three payouts, 2-of-3 | public testnet, 26 Oct 2026 | ran (4 txids in the README) |
+| Three locks, four 2-of-3 payouts, one full loan | public testnet, 26 to 28 Oct 2026 | ran (txids in the README) |
 | One signer alone cannot sign | testnet run | no signature produced |
 | Overdraw refused | testnet stress pass: ask 0.5 from a 0.25 vault | refused (by the wallet's balance check, not by Trove's rules) |
 | Back-test | 336 thirty-day loans | 11% liquidated, 0 bad debt (daily closes only) |

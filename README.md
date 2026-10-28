@@ -6,7 +6,7 @@ Live quote desk: https://trovedesk.xyz (no real funds).
 
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. Payouts from the vault are shielded transfers: a chain viewer sees no amounts and no addresses, only the fee (`docs/gate1-viewer-fields.json`, recorded on regtest). The lock is shielded when the borrower pays from a shielded balance; paid from a transparent address, the amount is visible on the way in.
 
-Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; lock and three payouts run on **public Zcash testnet** (26 Oct 2026); loan rules reviewed by us on 28 Oct 2026, no outside audit.
+Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; three locks, four 2-of-3 payouts and one full loan run on **public Zcash testnet** (26 to 28 Oct 2026); loan rules reviewed by us on 28 Oct 2026, no outside audit.
 
 ## What's real, and what we deliberately did not claim
 
