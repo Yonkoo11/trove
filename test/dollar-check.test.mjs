@@ -146,3 +146,23 @@ test('a time window given as a whole-second bigint is honoured (the command-line
   assert.equal(checkPayment(tx, { ...base, notBefore: 1793188000n, usedRefs: new Set() }).reason, 'transfer is older than the loan');
   assert.equal(checkPayment(tx, { ...base, notBefore: '1793187000', usedRefs: new Set() }).reason, 'loan time window must be whole seconds');
 });
+
+// One loan end to end on 28 Oct 2026 (reference da4fe456e343b589): the Lend page paid $5.00 lender to borrower,
+// then the borrower repaid $5.05 (principal plus the site's interest figure) with the same reference as the memo.
+const PAY5 = JSON.parse(readFileSync(new URL('./fixtures/devnet-usdc-pay-5.json', import.meta.url)));
+const REPAY5 = JSON.parse(readFileSync(new URL('./fixtures/devnet-usdc-repay-5.json', import.meta.url)));
+const LOOP = { mint: MINT, loanId: 'da4fe456e343b589', usedRefs: new Set() };
+test('the $5 loan: the lender payment counts as loanPaid and the repayment counts as repaid', () => {
+  const paid = checkPayment(PAY5, { ...LOOP, signature: PAY5.transaction.signatures[0], senderOwner: LENDER, recipientOwner: BORROWER, minAmount: 5_000_000n });
+  assert.equal(paid.ok, true);
+  assert.equal(paid.event.amount, 5_000_000n);
+  const repaid = checkPayment(REPAY5, { ...LOOP, type: 'repaid', signature: REPAY5.transaction.signatures[0], senderOwner: BORROWER, recipientOwner: LENDER, minAmount: 5_050_000n });
+  assert.equal(repaid.ok, true);
+  assert.equal(repaid.event.amount, 5_050_000n);
+  assert.ok(REPAY5.blockTime > PAY5.blockTime, 'the repayment was mined after the payment');
+});
+test('the $5 repayment is refused as a loan payment and when one more unit is owed', () => {
+  const sig = REPAY5.transaction.signatures[0];
+  assert.equal(checkPayment(REPAY5, { ...LOOP, signature: sig, senderOwner: LENDER, recipientOwner: BORROWER, minAmount: 5_000_000n }).ok, false);
+  assert.equal(checkPayment(REPAY5, { ...LOOP, type: 'repaid', signature: sig, senderOwner: BORROWER, recipientOwner: LENDER, minAmount: 5_050_001n }).reason, 'transfer is below the amount owed');
+});

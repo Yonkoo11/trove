@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 126 pass](https://img.shields.io/badge/npm%20test-127%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
+![tests: 129 pass](https://img.shields.io/badge/npm%20test-129%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
 
 Live quote desk: https://trovedesk.xyz (no real funds).
 
@@ -12,7 +12,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 127 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 129 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -22,6 +22,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | Lock page pays the vault from the borrower's own wallet | the QR on `#/lock/trove1.1000000.200` was read off a screenshot with zbarimg, parsed by the reference `zip321` crate (0.01 ZEC, testnet only), and paid by `zcash-devtool wallet pay --payment-uri`: tx `ca513ff2...bcf7`, the vault's view-only wallet rose by 1,000,000 zat and shows the memo `trove1.1000000.200`; `node scripts/qr-roundtrip.mjs` decodes 303 generated codes | tested (testnet, one payment; no phone wallet scanned it) |
 | Dollar payment checked before a loan counts as funded | 5 test USDC sent lender to borrower on Solana devnet with memo `trove-L1` (tx `3LMZwcSa...YnxF`); `scripts/check-payment.mjs` counted it as `loanPaid` and refused the same transfer for another loan id, one unit more owed, and sender and recipient swapped. The checker also requires the named sender's signature and refuses a transfer already counted; `test/dollar-check.test.mjs` replays the saved transaction | tested (devnet, one payment, sent from the command line; repay leg checked only in unit tests; not escrow) |
 | Lend page pays the dollars from the lender's own Solana wallet | `#/lend/<link>` builds one devnet transaction (create the borrower's USDC account if missing, TransferChecked, memo = the loan's random reference) and hands it to the browser wallet. Run on 28 Oct 2026 with the page driven by headless Chrome and the lender devnet key signing outside the page: tx `3o7qwqeb...aCkY`, $0.50, memo `559feecb68886bea`; `check-payment.mjs` counted it as `loanPaid` and refused a reference one character off; the saved transaction is replayed in `test/dollar-check.test.mjs` and the byte layouts are unit-tested in `test/solpay.test.mjs` | tested (devnet, one payment; no Phantom or Solflare extension clicked through yet) |
+| One loan end to end on public networks, 28 Oct 2026 | reference `da4fe456e343b589`, 0.02 ZEC against $5.00 at 20% LTV: lock `6da2ff84...a2c2` (Ironwood, memo `trove1.2000000.500.da4fe456e343b589`, block 4551656), Lend-page payment `3T2rwbUX...dXqa` ($5.00, memo = the reference), repayment `4VKTy8w3...4YX8` ($5.05, principal plus the site's interest figure, built with the site's own transaction code), then the 2-of-3 FROST release `a34f2039...f1c6` returning 0.02 ZEC to the borrower test wallet (block 4551685). `check-payment.mjs` counted both dollar legs and refused the repayment as a loan payment and when one more unit was owed; both transactions are replayed in `test/dollar-check.test.mjs` | tested (testnet + devnet, one loan; the lock was paid from a funder test wallet, the release went to the borrower test wallet; the vault wallet received the note but has not decrypted its memo after three syncs, so the memo is confirmed from the sender's output) |
 | Desk pause and funds cap refuse new locks | `test/mainnet-guards.test.mjs`, 8 tests: a paused desk or a loan one zatoshi over the cap is refused; a loan already locked can still be paid, repaid, refunded or paid out; a party cannot lift the pause from inside its own event; a junk cap fails closed. `scripts/lifecycle.mjs` reads `TROVE_PAUSED=1`, `TROVE_MAX_COLLATERAL_ZAT` and `TROVE_MAX_PRINCIPAL` and asks the rules before any ZEC moves: paused, collateral over the cap and loan over the cap each stop the run with "no funds moved" | tested (unit tests, and the three refusals run on 28 Oct 2026; a run allowed under a cap not re-run on chain since) |
 | Malformed payment data refused, never a crash | `test/dollar-check-hostile.test.mjs`: 27 bad inputs (negative, hex, blank, oversized amounts, bad block times, junk balance entries, non-list fields) each give a refusal; 2000 random balance strings never throw and never count more than the recipient gained (3 extra seeds also 0 fail) | tested |
 | Anonymity of the loan | not claimed: the Solana leg is public (both addresses, amount, time, memo) and the keeper sees the price it signs | not claimed |
@@ -63,13 +64,19 @@ The vault release is shielded. Only transaction fees are visible; `site/gate1-vi
 ## Verify it yourself
 
 ```
-npm test                         # 127 pass, 0 fail
+npm test                         # 129 pass, 0 fail
 node scripts/check-payment.mjs --sig 3LMZwcSasdL9Qa65LawYVRfwXK9KA47gLyL8F6dqz8bUZYPbC7foQgF3pnZCgKCr7Ju5cC1mP3pPkxHUYNgcYnxF \
   --from FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4 --to 8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5 \
   --loan trove-L1 --min 5000000   # counts: loanPaid, 5000000 base units at 1793178761
 node scripts/check-payment.mjs --sig 3o7qwqebyfPXqPyiBwo2h3kvSWHnFBqkgN66Bosmp2mn6hspHC6MMEwJErV2iMpyy5WLnKHCddi9aGT2qUcWaCkY \
   --from FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4 --to 8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5 \
   --loan 559feecb68886bea --min 500000  # the Lend-page payment: loanPaid, 500000 base units at 1793187701
+node scripts/check-payment.mjs --sig 3T2rwbUXejga9n9AmkBzyb14P7RGqaCWkWfbuP7fnRUjgh666Xpsu4FdQJKFs1VSsA1hVmayVQQvVQEk1HgWdXqa \
+  --from FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4 --to 8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5 \
+  --loan da4fe456e343b589 --min 5000000  # the $5 loan's payment: loanPaid, 5000000 base units at 1793209239
+node scripts/check-payment.mjs --sig 4VKTy8w3izwARkuUhqopJ66ZJ2GEPmw8Z4A9AWDS2LrjScjoDHoGCG18ojJJMk5ej4uD1GzGDzy5B4RbmRTb4YX8 \
+  --from 8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5 --to FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4 \
+  --loan da4fe456e343b589 --type repaid --min 5050000  # its repayment: repaid, 5050000 base units at 1793209776
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 node scripts/qr-roundtrip.mjs    # ok=303 bad=0 (needs zbarimg: brew install zbar)
 ```
@@ -85,7 +92,7 @@ trove/
 ├── site/      the app: Borrow, Loans, Lend, Limits (static, no build step)
 │   ├── lib/   request codes, money maths, ZIP 321 links, QR, the Solana payment builder
 │   └── vendor/  @solana/web3.js 1.98.0 browser build, loaded only when the lender presses Pay (sha256 89c3d6c2…c9fac)
-├── test/      unit and random-sequence stress tests; fixtures/ holds the two real devnet USDC payments
+├── test/      unit and random-sequence stress tests; fixtures/ holds the four real devnet USDC transfers
 ├── data/      365 daily ZEC closes for the back-test
 ├── docs/      MAINNET.md (what must be true before real funds), what a chain viewer sees
 ├── spike-scripts/  regtest and testnet setup, signer build, forged-signature check
