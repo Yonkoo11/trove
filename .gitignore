@@ -15,3 +15,5 @@ DEMO-FOOTGUNS.md
 .demo-rehearsal-state.json
 .demo-state.json
 video/
+
+.audit/
