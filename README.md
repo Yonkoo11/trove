@@ -1,18 +1,18 @@
 # Trove
 
-![tests: 55 pass](https://img.shields.io/badge/npm%20test-55%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
+![tests: 57 pass](https://img.shields.io/badge/npm%20test-57%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
 
 Live quote desk: https://trovedesk.xyz (no real funds).
 
 A fixed-term ZEC-collateral loan desk for two parties. The borrower's collateral sits in a **shielded vault** whose spend key is a 2-of-3 FROST key split between borrower, lender and a keeper. On the Zcash chain the lock and every payout look like ordinary shielded transfers: no amounts, no addresses, only the fee.
 
-Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; lock and three payouts run on **public Zcash testnet** (26 Oct 2026); not audited.
+Built for Zecathon, Private Markets track. Status: loan rules and keeper reader tested; full lifecycle tested on a **local regtest chain**; lock and three payouts run on **public Zcash testnet** (26 Oct 2026); loan rules reviewed by us on 28 Oct 2026, no outside audit.
 
 ## What's real, and what we deliberately did not claim
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 55 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 57 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -22,7 +22,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | Lock page pays the vault from the borrower's own wallet | the QR on `#/lock/trove1.1000000.200` was read off a screenshot with zbarimg, parsed by the reference `zip321` crate (0.01 ZEC, testnet only), and paid by `zcash-devtool wallet pay --payment-uri`: tx `ca513ff2...bcf7`, the vault's view-only wallet rose by 1,000,000 zat and shows the memo `trove1.1000000.200`; `node scripts/qr-roundtrip.mjs` decodes 302 generated codes | tested (testnet, one payment; no phone wallet scanned it) |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
 | On-chain enforcement of who signs a payout | not claimed: any 2 of 3 keys can spend | not claimed |
-| Audit of the FROST crates or this code | none | not done |
+| Review of the loan rules | logic pass and coupled-state pass over all 11 handlers in `src/loan.mjs`: 2 bugs fixed with tests (`test/audit/self-review.test.mjs`), 2 limits documented below; request links checked against zero, negative, oversized and script-like codes | reviewed by us; outside audit of the FROST crates or this code not done |
 
 ## What this does not hide or stop
 
@@ -57,7 +57,7 @@ The vault release is shielded. Only transaction fees are visible; `site/gate1-vi
 ## Verify it yourself
 
 ```
-npm test                         # 55 pass, 0 fail
+npm test                         # 57 pass, 0 fail
 node scripts/backtest.mjs        # table of liquidation rates; worst day -26.1%
 node scripts/qr-roundtrip.mjs    # ok=302 bad=0 (needs zbarimg: brew install zbar)
 ```
