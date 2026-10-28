@@ -173,12 +173,23 @@ const handlers = {
   },
 };
 
-export function step(loan, ev) {
+// Operator limits, passed by the driver, never by a party's event. Pausing stops new loans from
+// locking; every loan already locked can still be paid, repaid, defaulted, refunded and paid out,
+// so a pause never strands funds (refusing loanPaid would strand dollars the lender already sent).
+function guardCheck(loan, ev, { paused = false, cap = {} }) {
+  if (ev.type !== 'collateralLocked') return;
+  if (paused) fail('desk is paused: no new loans');
+  if (cap.maxCollateralZat !== undefined && BigInt(ev.zat) > BigInt(cap.maxCollateralZat)) fail('collateral above the funds cap');
+  if (cap.maxPrincipal !== undefined && loan.terms.principal > BigInt(cap.maxPrincipal)) fail('loan above the funds cap');
+}
+
+export function step(loan, ev, guard = {}) {
   const h = handlers[ev.type];
   if (!h) fail(`unknown event ${ev.type}`);
   if (ev.at === undefined) fail('event needs a time (at)');
   // Time comes from the driver's trusted clock or block time, never from a party, and may only move forward.
   if (BigInt(ev.at) < loan.lastAt) fail('event time is earlier than the last accepted event');
+  guardCheck(loan, ev, guard);
   const out = h(loan, ev);
   return { ...out, loan: { ...out.loan, lastAt: BigInt(ev.at) } };
 }
