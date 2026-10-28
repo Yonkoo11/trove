@@ -1,6 +1,7 @@
 import { collateralValue, interestDue, ltvBps, ZAT_PER_ZEC } from './lib/money.mjs';
 import { DEFAULT_LIMITS } from './lib/defaults.mjs';
-import { TERM_S, REGTEST, interestMicro, buildTerms, encodeRequest, decodeRequest } from './lib/terms.mjs';
+import { TERM_S, REGTEST, interestMicro, buildTerms, encodeRequest, decodeRequest, memoCode, newRef, isPayTo } from './lib/terms.mjs';
+import { buildUsdcPayment, DEVNET_RPC, USDC_DEVNET } from './lib/solpay.mjs';
 import { paymentUri, zecAmount } from './lib/zip321.mjs';
 import { qrMatrix, qrPath } from './lib/qr.mjs';
 
@@ -116,7 +117,7 @@ function stubPanel() {
     box.append(dl, h('div', { class: 'sealed' }, h('b', {}, 'Hidden from everyone else'), h('ul', { class: 'hidden-list' }, ['Sender', 'Receiver', 'Amount'].map((x) => h('li', {}, x)))),
       h('details', {}, h('summary', {}, 'Raw fields a viewer can read on each action'),
         h('ul', { class: 'fields' }, (d.public_fields_per_action ?? []).map((f) => h('li', {}, f)))),
-      h('p', { class: 'note' }, `Checked on one vault release (lender and keeper signed): ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Not the deposit. The dollar side of the loan runs on another chain and is public.`));
+      h('p', { class: 'note' }, `Checked on one vault release on a local test chain (lender and keeper signed): ${String(d.txid).slice(0, 8)}…${String(d.txid).slice(-4)}, height ${d.height}. Not the deposit. The dollar side of the loan runs on another chain and is public.`));
   };
   gateListeners.add(draw); draw();
   return box;
@@ -146,6 +147,7 @@ function quote(zecStr, borrowStr) {
 function borrowScreen() {
   const zec = h('input', { id: 'zec', inputmode: 'decimal', autocomplete: 'off', value: '1', 'aria-describedby': 'zec-hint' });
   const bor = h('input', { id: 'bor', inputmode: 'decimal', autocomplete: 'off', value: '200' });
+  const payTo = h('input', { id: 'payto', autocomplete: 'off', spellcheck: 'false', placeholder: 'Optional', 'aria-describedby': 'payto-hint' });
   const err = h('p', { class: 'error', role: 'alert' });
   const big = h('span', { class: 'big' });
   const maxHint = h('p', { class: 'hint', id: 'zec-hint' });
@@ -187,14 +189,19 @@ function borrowScreen() {
 
   btn.addEventListener('click', () => {
     if (!q || q.error !== undefined) return;
-    const code = encodeRequest(q.zat, q.principal);
+    const to = payTo.value.trim();
+    if (to && !isPayTo(to)) { err.textContent = 'That is not a Solana address. Leave it blank or paste the address your wallet shows.'; return; }
+    err.textContent = '';
+    const ref = newRef();
+    const code = encodeRequest(q.zat, q.principal, ref, to);
     const link = `${location.origin}${location.pathname}#/lend/${code}`;
     const field = h('input', { class: 'share-url', readonly: '', value: link, 'aria-label': 'Request link' });
     const [copy, copied] = copyButton('Copy link', link, field);
     terms.replaceChildren(h('p', { class: 'share-title' }, 'Send this link to a lender'),
       h('div', { class: 'share' }, field, copy), copied,
-      h('p', { class: 'small' }, 'They open it to see your terms. It shows only the collateral and the dollar amount.'),
-      h('a', { class: 'btn quiet lock-next', href: `#/lock/${code}` }, 'Next: lock your collateral'));
+      h('p', { class: 'small' }, to ? 'They open it to see your terms and pay the dollars to the address above. The link carries a random reference, not your name or your ZEC address.'
+        : 'They open it to see your terms. The link carries a random reference, not your name or your ZEC address. Tell the lender where to send the dollars yourself.'),
+      h('a', { class: 'btn quiet lock-next', href: `#/lock/${encodeRequest(q.zat, q.principal, ref)}` }, 'Next: lock your collateral'));
     terms.hidden = false;
   });
   zec.addEventListener('input', update);
@@ -205,6 +212,8 @@ function borrowScreen() {
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
     h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
     h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD'))),
+    h('label', { class: 'field', for: 'payto' }, h('span', {}, 'Where the dollars go'), h('div', { class: 'input' }, payTo),
+      h('p', { class: 'hint', id: 'payto-hint' }, 'Your Solana address for the USDC. It goes in the link, so the lender can pay from this site.')),
     err,
     h('div', { class: 'result' }, h('span', { class: 'label' }, 'You receive'), big),
     btn, terms, lines, h('div', { class: 'pricebar' }, priceNote, live));
@@ -272,13 +281,80 @@ function requestPanel(code) {
         line('You earn if repaid', usd(interest)),
         line('Funding window', `${t.fundWindow / 60} minutes`)),
       h('p', { class: 'small' }, `Price used: ${usd(price.micro)}, ${price.label}.`),
-      h('p', { class: 'small' }, 'The borrower locks the collateral first, from the ', h('a', { href: `#/lock/${raw}` }, 'lock page'), '. Paying the dollars from this page is not built yet; in the test runs it ran from scripts. ', h('a', { href: 'https://github.com/Yonkoo11/trove#how-a-loan-works' }, 'How a loan works')));
+      h('p', { class: 'small' }, 'The borrower locks the collateral first, from the ', h('a', { href: `#/lock/${memoCode(r)}` }, 'lock page'), '. Then you pay the dollars below. ', h('a', { href: 'https://github.com/Yonkoo11/trove#how-a-loan-works' }, 'How a loan works')),
+      payPanel(r));
   };
   input.addEventListener('input', show);
   show();
   return h('div', { class: 'panel', style: 'margin-bottom:16px' },
     h('label', { class: 'field', for: 'code' }, h('span', {}, 'Borrower’s request link'), h('div', { class: 'input' }, input)), out);
 }
+// ---- the dollar leg: one USDC transfer on Solana devnet with the loan reference as the memo
+let web3Loading = null;
+function loadWeb3() {
+  if (window.solanaWeb3) return Promise.resolve(window.solanaWeb3);
+  web3Loading ??= new Promise((ok, no) => {
+    const s = h('script', { src: 'vendor/solana-web3-1.98.0.iife.min.js', onload: () => ok(window.solanaWeb3), onerror: () => { web3Loading = null; no(new Error('could not load the Solana library')); } });
+    document.head.append(s);
+  });
+  return web3Loading;
+}
+const walletProvider = () => window.phantom?.solana ?? window.solflare ?? window.solana ?? null;
+
+async function sendUsdc(r, to, say) {
+  const wallet = walletProvider();
+  if (!wallet) throw new Error('No Solana wallet found in this browser. Install Phantom or Solflare, set it to devnet, then try again.');
+  say('Loading the Solana library…');
+  const web3 = await loadWeb3();
+  say('Waiting for your wallet…');
+  await wallet.connect();
+  const from = wallet.publicKey.toString();
+  const connection = new web3.Connection(DEVNET_RPC, 'confirmed');
+  say('Preparing the payment…');
+  const { tx, blockhash, lastValidBlockHeight } = await buildUsdcPayment(web3, { connection, from, to, amount: r.principal, memo: r.ref });
+  say('Approve the payment in your wallet…');
+  const { signature } = await wallet.signAndSendTransaction(tx);
+  say('Sent. Waiting for the chain to confirm…');
+  const { value } = await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+  if (value?.err) throw new Error(`The chain rejected the payment: ${JSON.stringify(value.err)}`);
+  return signature;
+}
+
+function payPanel(r) {
+  const box = h('div', { class: 'pay' }, h('h3', {}, 'Pay the dollars'));
+  if (!r.ref) { box.append(h('p', { class: 'small' }, 'This link has no loan reference, so a payment cannot be matched to it. Ask the borrower for a fresh link from the Borrow page.')); return box; }
+  const to = h('input', { id: 'payto', autocomplete: 'off', spellcheck: 'false', value: r.payTo, placeholder: 'Borrower’s Solana address' });
+  const status = h('p', { class: 'small', 'aria-live': 'polite' });
+  const err = h('p', { class: 'error', role: 'alert' });
+  const done = h('div', {});
+  const btn = h('button', { class: 'btn', type: 'button' }, `Pay ${usd(r.principal)} with wallet`);
+  const say = (t) => { status.textContent = t; };
+  btn.addEventListener('click', async () => {
+    err.textContent = '';
+    const addr = to.value.trim();
+    if (!isPayTo(addr)) { err.textContent = 'Enter the borrower’s Solana address first.'; return; }
+    btn.disabled = true;
+    try {
+      const sig = await sendUsdc(r, addr, say);
+      say('');
+      const link = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+      done.replaceChildren(h('p', { class: 'share-title' }, 'Paid'), h('p', { class: 'small' }, 'Signature ', h('a', { href: link, target: '_blank', rel: 'noopener' }, `${sig.slice(0, 8)}…${sig.slice(-6)}`),
+        '. Keep it: the key holders match this payment to the loan by the memo and the amount.'));
+    } catch (e) { say(''); err.textContent = e?.message ?? String(e); btn.disabled = false; }
+  });
+  box.append(
+    h('label', { class: 'field', for: 'payto' }, h('span', {}, 'Pay to'), h('div', { class: 'input' }, to),
+      h('p', { class: 'hint' }, r.payTo ? 'From the borrower’s link. Check it with them another way before paying.' : 'The link has no address. Ask the borrower for their Solana address.')),
+    h('ul', { class: 'lines' },
+      h('li', {}, h('span', {}, 'Amount'), h('span', {}, `${usd(r.principal)} in USDC, Solana devnet`)),
+      h('li', {}, h('span', {}, 'Memo'), h('span', { class: 'mono' }, r.ref))),
+    btn, status, err, done,
+    h('details', { class: 'small' }, h('summary', {}, 'Pay from another wallet instead'),
+      h('p', {}, `Send exactly ${usd(r.principal)} of devnet USDC (mint ${USDC_DEVNET.slice(0, 6)}…${USDC_DEVNET.slice(-4)}) to the address above with the memo ${r.ref}. A payment without the memo cannot be matched to this loan.`)),
+    h('p', { class: 'small' }, 'This step talks to your wallet and to the public Solana devnet RPC, which sees your network address. The payment itself is public on Solana: your address, the borrower’s address, the amount and the memo. The memo is a random reference, not a label.'));
+  return box;
+}
+
 function lendScreen(code = '') {
   const req = requestPanel(code);
   return h('section', { class: 'screen' }, h('h1', {}, 'Lend'),
@@ -307,7 +383,7 @@ function qrSvg(text) {
 function lockScreen(code) {
   const back = h('a', { class: 'back', href: '#/borrow' }, 'Back to borrow');
   const r = decodeRequest(code);
-  code = r && encodeRequest(r.zat, r.principal);
+  code = r && memoCode(r);
   const uri = r && paymentUri(TEST_VAULT, r.zat, code);
   if (!uri) return h('section', { class: 'screen' }, back, h('h1', {}, r ? 'This request is too large to lock' : 'That lock link is broken'),
     h('p', { class: 'lead' }, r ? 'Zcash payment links stop at 21,000,000 ZEC. Make a smaller request on the Borrow page.' : 'Make a request on the Borrow page and use the lock link it gives you.'));
@@ -348,7 +424,7 @@ function lockScreen(code) {
         h('a', { class: 'btn', href: uri }, 'Open in wallet'),
         h('p', { class: 'share-title lock-link' }, 'Payment link'),
         h('div', { class: 'share' }, field, copy), copied,
-        h('p', { class: 'small' }, `The link puts your request code (${code}) in the memo, so the key holders can tell which request the deposit is for.`), priceLine),
+        h('p', { class: 'small' }, `The link puts your request code (${code}) in the memo, so the key holders can tell which request the deposit is for. Your dollar address is not in it.`), priceLine),
       h('aside', { class: 'panel lock-aside', 'aria-label': 'Before you send' }, h('h2', {}, 'Before you send'),
         h('ul', { class: 'facts' }, facts.map((x) => h('li', {}, x))))));
 }
@@ -362,9 +438,9 @@ function limitsScreen() {
       'The keeper reads the price from at least two public sources and signs it. Nothing on-chain checks it.',
     ]],
     ['What others can see', [
-      'The dollar payment crosses chains through NEAR 1Click and is visible on the other chain.',
+      'The dollar leg is a USDC transfer on Solana (devnet for now). It is public: both Solana addresses, the amount, the time, and a random loan reference in the memo. Anyone who can pair that time with a shielded deposit learns the two belong together.',
       'The dollar amount of the loan is public. With the price, it bounds how much ZEC you locked, so borrow a round amount below the maximum.',
-      'The keeper learns loan ids and when each step happens.',
+      'The keeper learns loan references and when each step happens.',
       'On the test chain one shared vault wallet serves every loan, so the three key holders can see other loans’ deposits and timing.',
     ]],
     ['What is unproven', [
@@ -382,7 +458,7 @@ function limitsScreen() {
     h('div', { class: 'cols' }, groups.map(([t, items]) =>
       h('div', { class: 'panel' }, h('h3', {}, t), h('ul', { class: 'facts' }, items.map((x) => h('li', {}, x)))))),
     stubPanel(),
-    h('p', { class: 'small' }, 'The price check on the Borrow page asks CoinGecko from your browser. Nothing else leaves the page.'));
+    h('p', { class: 'small' }, 'This site has no server of its own. Opening it loads files from GitHub Pages, which logs your network address like any web host. The price check on the Borrow page asks CoinGecko from your browser. Paying on the Lend page talks to your Solana wallet and the public devnet RPC. Nothing else leaves the page.'));
 }
 
 // ---- router

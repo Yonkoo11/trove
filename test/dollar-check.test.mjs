@@ -88,6 +88,19 @@ test('a real devnet transfer counts as loanPaid', () => {
   assert.equal(r.event.ref, REAL_SIG);
 });
 
+// A second real devnet transfer, this time sent from the Lend page itself with a random 16-hex loan reference
+// as the memo instead of a readable label (2026-10-28, $0.50).
+const REAL2 = JSON.parse(readFileSync(new URL('./fixtures/devnet-usdc-pay-ref.json', import.meta.url)));
+const REAL2_SIG = REAL2.transaction.signatures[0];
+test('a payment from the Lend page with a random reference memo counts as loanPaid', () => {
+  const r = checkPayment(REAL2, { signature: REAL2_SIG, mint: MINT, senderOwner: LENDER, recipientOwner: BORROWER, loanId: '559feecb68886bea', minAmount: 500_000n, usedRefs: new Set() });
+  assert.equal(r.ok, true);
+  assert.equal(r.event.amount, 500_000n);
+  const memos = REAL2.transaction.message.instructions.filter((i) => i.program === 'spl-memo').map((i) => i.parsed);
+  assert.deepEqual(memos, ['559feecb68886bea']);
+  assert.match(checkPayment(REAL2, { signature: REAL2_SIG, mint: MINT, senderOwner: LENDER, recipientOwner: BORROWER, loanId: '559feecb68886beb', minAmount: 500_000n, usedRefs: new Set() }).reason, /loan id as a memo/);
+});
+
 for (const [name, o, why] of [
   ['another loan id', { loanId: 'trove-L2' }, /loan id as a memo/],
   ['one unit short', { minAmount: 5_000_001n }, /below the amount owed/],

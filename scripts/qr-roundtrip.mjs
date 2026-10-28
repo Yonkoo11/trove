@@ -12,7 +12,7 @@ const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:?&
 let seed = 12345;
 const rnd = (n) => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
 
-const payloads = [paymentUri('utest1' + 'q'.repeat(104), 25_000_000n, 'trove1.25000000.2000'), 'a'.repeat(666)];
+const payloads = [paymentUri('utest1' + 'q'.repeat(104), 25_000_000n, 'trove1.25000000.2000'), paymentUri('utest1' + 'q'.repeat(104), 25_000_000n, 'trove1.25000000.2000.559feecb68886bea'), 'a'.repeat(666)];
 for (let i = 0; i < count; i++) {
   let s = '';
   for (let j = 1 + rnd(666); j > 0; j--) s += chars[rnd(chars.length)];
