@@ -1,0 +1,24 @@
+@font-face { font-family: "Geist"; src: url("../../site/fonts/Geist-Variable.woff2") format("woff2"); font-weight: 100 900; }
+:root { --ground: #F4F5F7; --paper: #FFFFFF; --ink: #12151A; --muted: #5E6670; --accent: #F4B728; --rule: #D9DCE1; }
+* { box-sizing: border-box; margin: 0; }
+html, body { background: var(--ground); color: var(--ink); font-family: Geist, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+.ticket { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 1px 2px rgba(18,21,26,.06), 0 8px 24px rgba(18,21,26,.06); overflow: hidden; }
+.ticket .head { display: flex; align-items: center; gap: 10px; padding: 20px 24px 0; font-size: 14px; line-height: 20px; color: var(--muted); font-weight: 500; }
+.ticket .head svg { width: 20px; height: 20px; }
+.ticket .big { padding: 8px 24px 0; font-size: 40px; line-height: 48px; font-weight: 600; }
+.ticket .big small { display: block; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+.ticket dl { margin: 16px 24px 0; border-top: 1px solid var(--rule); }
+.ticket .row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; font-size: 14px; line-height: 20px; border-bottom: 1px solid var(--rule); }
+.ticket .row:last-child { border-bottom: 0; }
+.ticket dt { color: var(--muted); } .ticket dd { font-weight: 500; }
+.ticket .row.total dd { font-weight: 600; }
+.ticket .stub { margin-top: 12px; padding: 16px 24px 20px; border-top: 2px dashed var(--ink); background: var(--ground); font-size: 13px; line-height: 18px; }
+.ticket .stub b { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.ticket .stub ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); }
+.ticket .stub ul li::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: var(--ink); margin-right: 8px; vertical-align: 2px; }
+.hidden { margin-top: 10px; display: inline-flex; gap: 6px; padding: 8px 12px; border-radius: 6px; background: var(--ink); color: var(--paper); font-size: 13px; line-height: 18px; }
+.hidden span { padding: 0 8px; border-radius: 999px; background: rgba(255,255,255,.14); }
+h1 { font-weight: 600; letter-spacing: -0.01em; }
+.sub { color: var(--muted); }
+.cta { display: inline-block; padding: 10px 16px; border-radius: 6px; background: var(--accent); color: var(--ink); font-weight: 600; font-size: 16px; line-height: 24px; }
+.mark { display: inline-block; vertical-align: middle; }

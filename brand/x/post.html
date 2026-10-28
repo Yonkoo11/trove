@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="shared.css">
+<style>
+body{width:1600px;height:900px;position:relative;overflow:hidden}
+.copy{position:absolute;left:100px;top:50%;transform:translateY(-50%);width:640px}
+.brand{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:600;margin-bottom:32px}
+.brand svg{width:36px;height:36px}
+h1{font-size:48px;line-height:56px;margin-bottom:20px}
+.sub{font-size:20px;line-height:30px;margin-bottom:32px}
+.where{font-size:16px;line-height:24px;color:var(--muted);margin-top:20px}
+.ticket{position:absolute;right:120px;top:50%;transform:translateY(-50%)}
+</style>
+<div class="copy">
+  <div class="brand"><svg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'><rect x='8' y='4' width='16' height='24' rx='2' fill='#12151A'/><circle cx='8' cy='19' r='2.4' fill='#F4F5F7'/><circle cx='24' cy='19' r='2.4' fill='#F4F5F7'/><path d='M11.5 19h9' stroke='#F4F5F7' stroke-width='1.4' stroke-dasharray='1.8 1.4'/></svg> Trove</div>
+  <h1>Borrow dollars against your ZEC, with the collateral held in a shielded vault.</h1>
+  <p class="sub">Price the loan in the browser, lock test ZEC from your own wallet, and read on the ticket exactly what a stranger sees on chain.</p>
+  <span class="cta">Try it at trovedesk.xyz</span>
+  <p class="where">Zcash testnet and Solana devnet, no real funds. Unaudited. Built for Zecathon 2026.</p>
+</div>
+<div class="ticket" style="width:480px">
+  <div class="head"><svg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'><rect x='8' y='4' width='16' height='24' rx='2' fill='#12151A'/><circle cx='8' cy='19' r='2.4' fill='#FFFFFF'/><circle cx='24' cy='19' r='2.4' fill='#FFFFFF'/><path d='M11.5 19h9' stroke='#FFFFFF' stroke-width='1.4' stroke-dasharray='1.8 1.4'/></svg> Loan ticket · 1 ZEC locked</div>
+  <div class="big">$400.00<small>borrowed against 1 ZEC at $1,240.74</small></div>
+  <dl>
+    <div class="row"><dt>Loan to value</dt><dd>32.24%</dd></div>
+    <div class="row"><dt>Liquidation price</dt><dd>$571.43 per ZEC</dd></div>
+    <div class="row"><dt>Term</dt><dd>30 days, fixed</dd></div>
+    <div class="row"><dt>Interest at 10% APR</dt><dd>$3.29</dd></div>
+    <div class="row total"><dt>Total to repay</dt><dd>$403.29</dd></div>
+  </dl>
+  <div class="stub"><b>What the chain shows when the vault pays out</b>
+    <ul><li>Network fee 0.0001 ZEC</li><li>0 public inputs</li><li>0 public outputs</li><li>2 shielded actions</li></ul>
+    <div class="hidden">Hidden <span>Sender</span><span>Receiver</span><span>Amount</span></div>
+  </div>
+</div>
