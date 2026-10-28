@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Gate 1 stage A: fresh regtest chain, 2-of-3 FROST group, vault address, fund the vault.
 set -euo pipefail
-OLD=~/Projects/snarks-launchpad/probe/zcash-batch
-BIN=$OLD/work/bin; DT=$BIN/zcash-devtool
-FZ=~/Projects/shielded-lend/spike/frost-zcash-demo/target/release
-W=~/Projects/shielded-lend/spike/work; mkdir -p $W/logs $W/frost
+HERE=$(cd "$(dirname "$0")" && pwd); source $HERE/lib.sh
+# ZEBRA_DIR holds the regtest zebrad binary (bin/) and its configs (config/zebrad.toml, config/activation-heights.toml).
+OLD=${ZEBRA_DIR:?set ZEBRA_DIR to the folder holding a regtest zebrad build and its config/}
+BIN=$OLD/work/bin; mkdir -p $W/logs $W/frost
 SERVER=127.0.0.1:8137; RPC=http://127.0.0.1:18232
 HEIGHTS=$OLD/config/activation-heights.toml
 export RUST_LOG=warn RUST_MIN_STACK=67108864

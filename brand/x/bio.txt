@@ -1,1 +1,0 @@
-Borrow dollars against ZEC locked in a shielded 2-of-3 vault. Zcash testnet and Solana devnet only, no real funds. Built for Zecathon 2026.

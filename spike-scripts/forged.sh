@@ -1,9 +1,8 @@
 #!/bin/bash
 # Forged-signature check against the live regtest node: two bad signatures on fresh spends, each must be rejected.
 # Case 1: 64 random bytes. Case 2: the valid signature from the earlier spend (logs/sig.hex) replayed on a new message.
-W=~/Projects/shielded-lend/spike/work; cd $W
-Z=~/Projects/shielded-lend/spike/frost-zcash-demo/target/release
-D=~/Projects/snarks-launchpad/probe/zcash-batch/work/bin/zcash-devtool
+HERE=$(cd "$(dirname "$0")" && pwd); source $HERE/lib.sh
+Z=$FZ; D=$DT; cd $W
 ACCT=$($D wallet -w wallets/vault list-accounts 2>/dev/null | awk "/^Account/{print \$2; exit}")
 FUA=$(cat logs/funder.ua)
 try() { # $1 label, $2 signature hex

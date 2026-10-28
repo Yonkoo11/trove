@@ -77,7 +77,7 @@ body { -webkit-font-smoothing: antialiased; }
 @media (hover: hover) { .nav nav a:hover { background: var(--rule); color: var(--ink); } }
 .nav nav a[aria-current="page"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
 
-@media (max-width: 480px) { .nav { gap: 8px; } .nav nav { gap: 0; } .nav nav a { padding: 8px; } }
+@media (max-width: 480px) { .nav { gap: 8px; } .nav nav { gap: 0; } .nav nav a { padding: 8px; } .lead { margin-bottom: 16px; } .field { margin-bottom: 12px; } .result { margin-top: 0; padding: 12px 16px; } }
 main { outline: none; }
 .screen { width: 100%; max-width: 1120px; margin: 0 auto; padding: 8px 16px 48px; }
 .screen > h1 { margin: 8px 0 8px; max-width: 760px; }
@@ -97,6 +97,12 @@ main { outline: none; }
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .field { display: block; margin-bottom: 16px; }
+@media (min-width: 900px) {
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .pair .field { min-width: 0; }
+  .lead { margin-bottom: 16px; }
+  .result { margin-top: 0; padding: 12px 16px; }
+}
 .field > span { display: block; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
 .input {
   display: flex;
@@ -121,7 +127,7 @@ main { outline: none; }
   outline: none;
 }
 .input .unit { margin-right: 8px; padding: 4px 10px; border-radius: var(--r-control); background: var(--ground); font-size: 14px; line-height: 20px; font-weight: 500; color: var(--muted); }
-.field .hint { font-size: 14px; line-height: 20px; color: var(--muted); margin-top: 8px; }
+.field .hint { font-size: 16px; line-height: 24px; color: var(--muted); margin-top: 8px; }
 
 .result { margin: 4px 0 16px; padding: 16px; background: var(--ground); border-radius: var(--r-control); }
 .result .big { display: block; font-size: 40px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
@@ -165,6 +171,7 @@ main { outline: none; }
 .lines li.total span:first-child { color: var(--ink); }
 
 .error { color: var(--red); font-size: 14px; line-height: 20px; margin: 0 0 16px; min-height: 20px; }
+.error:empty { min-height: 0; margin: 0; }
 .say { margin-top: 32px; display: grid; gap: 8px; max-width: 720px; }
 
 .stub {

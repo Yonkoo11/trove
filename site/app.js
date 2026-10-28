@@ -210,8 +210,9 @@ function borrowScreen() {
   priceListeners.add(() => { const shown = !terms.hidden; update(); if (shown && q.error === undefined) terms.hidden = false; });
 
   const ticket = h('form', { class: 'panel ticket', onsubmit: (e) => e.preventDefault() },
-    h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
-    h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD'))),
+    h('div', { class: 'pair' },
+      h('label', { class: 'field', for: 'zec' }, h('span', {}, 'Collateral'), h('div', { class: 'input' }, zec, h('span', { class: 'unit' }, 'ZEC')), maxHint),
+      h('label', { class: 'field', for: 'bor' }, h('span', {}, 'Borrow'), h('div', { class: 'input' }, bor, h('span', { class: 'unit' }, 'USD')))),
     h('label', { class: 'field', for: 'payto' }, h('span', {}, 'Where the dollars go'), h('div', { class: 'input' }, payTo),
       h('p', { class: 'hint', id: 'payto-hint' }, 'Your Solana address for the USDC. It goes in the link, so the lender can pay from this site.')),
     err,

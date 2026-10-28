@@ -5,8 +5,9 @@ set -euo pipefail
 export TROVE_NET=testnet
 HERE=$(cd "$(dirname "$0")" && pwd); source $HERE/lib.sh
 mkdir -p $W/logs $W/frost $W/wallets; rm -f $W/frost/*
-ln -sfn ~/zcash-testnet/wallets/funder $W/wallets/funder; ln -sf ~/zcash-testnet/wallets/funder.age $W/wallets/funder.age
-cp -R ~/Projects/shielded-lend/spike/work/tls $W/
+FUNDER=${TROVE_FUNDER:?set TROVE_FUNDER to the funded testnet wallet folder (its .age identity sits beside it)}
+ln -sfn "$FUNDER" $W/wallets/funder; ln -sf "$FUNDER.age" $W/wallets/funder.age
+cp -R "$ROOT/spike/work/tls" $W/
 pkill -f frostd 2>/dev/null || true; sleep 1
 (cd $W && nohup $FZ/frostd -i 127.0.0.1 -p 2744 -c tls/cert.pem -k tls/key.pem > logs/frostd.log 2>&1 &); sleep 2
 for n in borrower lender keeper; do $FZ/frost-client init -c $W/frost/$n.toml >/dev/null; done

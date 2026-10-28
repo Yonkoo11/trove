@@ -3,9 +3,8 @@
 # Needs spike/work/tls (throwaway CA + leaf cert for localhost: frost-client always speaks https://host:port,
 # and reads trust roots from SSL_CERT_FILE). frost/*.toml server_url must be "localhost:2744" (no scheme).
 set -e
-W=~/Projects/shielded-lend/spike/work; cd $W
-Z=~/Projects/shielded-lend/spike/frost-zcash-demo/target/release
-D=~/Projects/snarks-launchpad/probe/zcash-batch/work/bin/zcash-devtool
+HERE=$(cd "$(dirname "$0")" && pwd); source $HERE/lib.sh
+Z=$FZ; D=$DT; cd $W
 G=$(awk '/Public key/{print $3; exit}' <($Z/frost-client groups -c frost/borrower.toml))
 L=$(awk '/lender/{gsub(/[()]/,"",$2); print $2}' <($Z/frost-client groups -c frost/borrower.toml))
 K=$(awk '/keeper/{gsub(/[()]/,"",$2); print $2}' <($Z/frost-client groups -c frost/borrower.toml))
