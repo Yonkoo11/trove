@@ -1,6 +1,6 @@
 # Trove
 
-![tests: 83 pass](https://img.shields.io/badge/npm%20test-83%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
+![tests: 122 pass](https://img.shields.io/badge/npm%20test-122%20pass-brightgreen) ![chain: regtest + testnet](https://img.shields.io/badge/chain-regtest%20%2B%20testnet-lightgrey)
 
 Live quote desk: https://trovedesk.xyz (no real funds).
 
@@ -12,7 +12,7 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 
 | Capability | Evidence | Status |
 |---|---|---|
-| Loan rules (open, repay, price default, term default, abort) | `npm test`: 83 pass, 0 fail | tested |
+| Loan rules (open, repay, price default, term default, abort) | `npm test`: 122 pass, 0 fail | tested |
 | Lock, repay, default, abort and late-deposit refund move real shielded funds with the right 2 of 3 signers | `node scripts/lifecycle.mjs A\|B\|C\|D` on regtest, balances checked after each | tested (regtest only) |
 | A viewer of the chain sees only the fee | `docs/gate1-viewer-fields.json`: valueBalanceZat 10000, transparent in/out 0/0 | tested (one tx) |
 | Default limits 40% open / 70% liquidate | `node scripts/backtest.mjs` over 365 daily ZEC closes: 11% of 30-day loans liquidated, 0 bad debt | tested, daily prices miss intraday dips |
@@ -21,6 +21,8 @@ Built for Zecathon, Private Markets track. Status: loan rules and keeper reader 
 | Public testnet run | lock `ed25f049...63dd` then repay-style, default and abort payouts (`73f46ef8...dc48`, `37284cad...6994`, `ab24ccf6...f099`) on testnet.zec.rocks; a fresh view-only wallet synced from the public server shows the vault at 0.0497 ZEC, borrower 0.35, lender 0.10; one signer alone produced no signature. A second 0.2 ZEC lock, an overdraw refused (by the wallet's balance check) and two payouts in a row before change confirmed (`6da6b8bb...cad0`, `e5e6aa88...42a4`) also ran. `spike-scripts/testnet-setup.sh`, `build-signer-nu7.sh` | tested (testnet, one run; refund by name, keeper price signing and block-explorer confirmation not run) |
 | Lock page pays the vault from the borrower's own wallet | the QR on `#/lock/trove1.1000000.200` was read off a screenshot with zbarimg, parsed by the reference `zip321` crate (0.01 ZEC, testnet only), and paid by `zcash-devtool wallet pay --payment-uri`: tx `ca513ff2...bcf7`, the vault's view-only wallet rose by 1,000,000 zat and shows the memo `trove1.1000000.200`; `node scripts/qr-roundtrip.mjs` decodes 302 generated codes | tested (testnet, one payment; no phone wallet scanned it) |
 | Dollar payment checked before a loan counts as funded | 5 test USDC sent lender to borrower on Solana devnet with memo `trove-L1` (tx `3LMZwcSa...YnxF`); `scripts/check-payment.mjs` counted it as `loanPaid` and refused the same transfer for another loan id, one unit more owed, and sender and recipient swapped. The checker also requires the named sender's signature and refuses a transfer already counted; `test/dollar-check.test.mjs` replays the saved transaction | tested (devnet, one payment, sent from the command line; repay leg checked only in unit tests; not escrow) |
+| Desk pause and funds cap refuse new locks | `test/mainnet-guards.test.mjs`, 8 tests: a paused desk or a loan one zatoshi over the cap is refused; a loan already locked can still be paid, repaid, refunded or paid out; a party cannot lift the pause from inside its own event; a junk cap fails closed | tested (unit tests only; not wired into the scripts yet) |
+| Malformed payment data refused, never a crash | `test/dollar-check-hostile.test.mjs`: 27 bad inputs (negative, hex, blank, oversized amounts, bad block times, junk balance entries, non-list fields) each give a refusal; 2000 random balance strings never throw and never count more than the recipient gained (3 extra seeds also 0 fail) | tested |
 | Anonymity of the loan | not claimed: the stablecoin leg is public and the keeper sees the price it signs | not claimed |
 | On-chain enforcement of who signs a payout | not claimed: any 2 of 3 keys can spend | not claimed |
 | Review of the loan rules | logic pass and coupled-state pass over all 11 handlers in `src/loan.mjs`: 2 bugs fixed with tests (`test/audit/self-review.test.mjs`), 2 limits documented below; request links checked against zero, negative, oversized and script-like codes | reviewed by us; outside audit of the FROST crates or this code not done |
@@ -58,7 +60,7 @@ The vault release is shielded. Only transaction fees are visible; `site/gate1-vi
 ## Verify it yourself
 
 ```
-npm test                         # 83 pass, 0 fail
+npm test                         # 122 pass, 0 fail
 node scripts/check-payment.mjs --sig 3LMZwcSasdL9Qa65LawYVRfwXK9KA47gLyL8F6dqz8bUZYPbC7foQgF3pnZCgKCr7Ju5cC1mP3pPkxHUYNgcYnxF \
   --from FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4 --to 8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5 \
   --loan trove-L1 --min 5000000   # counts: loanPaid, 5000000 base units at 1793178761
