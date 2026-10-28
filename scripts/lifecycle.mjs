@@ -33,14 +33,28 @@ let loan = openLoan({ id, createdAt: T0, terms });
 const results = { scenario, steps: [] };
 const log = (s) => { results.steps.push(s); console.log(s); };
 
+// Desk pause and funds cap from the environment (TROVE_PAUSED=1, TROVE_MAX_COLLATERAL_ZAT, TROVE_MAX_PRINCIPAL).
+// A junk number stops the run here instead of lifting the cap.
+const env = process.env;
+const guard = { paused: env.TROVE_PAUSED === '1', cap: {} };
+const capFrom = (name) => {
+  if (/^\d+$/.test(env[name])) return BigInt(env[name]);
+  console.log(`refused before locking, no funds moved: ${name} must be a whole number`); process.exit(2);
+};
+if (env.TROVE_MAX_COLLATERAL_ZAT !== undefined) guard.cap.maxCollateralZat = capFrom('TROVE_MAX_COLLATERAL_ZAT');
+if (env.TROVE_MAX_PRINCIPAL !== undefined) guard.cap.maxPrincipal = capFrom('TROVE_MAX_PRINCIPAL');
+const lockEv = { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 50) };
+// Ask the rules before any funds move: lock.sh sends real ZEC, so a refusal after it would be too late.
+try { step(loan, lockEv, guard); } catch (e) { console.log(`refused before locking, no funds moved: ${e.message}`); process.exit(2); }
+
 sh('lock.sh', '100000000');
 log(`collateral locked in the vault (real regtest transaction)`);
-if (scenario !== 'D') ({ loan } = step(loan, { type: 'collateralLocked', at: T0 + 60, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 50) }));
+if (scenario !== 'D') ({ loan } = step(loan, lockEv, guard));
 
 const before = { borrower: bal('borrower'), lender: bal('lender') };
 if (scenario === 'D') {
   const late = { type: 'collateralLocked', at: T0 + 4000, zat: 100_000_000n, txid: 'regtest-lock', reading: reading(id, 100, T0 + 3990) };
-  try { step(loan, late); throw new Error('a late deposit must be refused'); } catch (e) { log(`late deposit refused by the rules: ${e.message}`); }
+  try { step(loan, late, guard); throw new Error('a late deposit must be refused'); } catch (e) { log(`late deposit refused by the rules: ${e.message}`); }
   ({ loan } = step(loan, { type: 'depositSeen', at: late.at, zat: late.zat, txid: late.txid }));
   const r = step(loan, { type: 'refundDeposit', at: late.at + 10, txid: late.txid });
   loan = r.loan;
