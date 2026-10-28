@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { checkPayment } from '../src/dollar-check.mjs';
 import { openLoan, step } from '../src/loan.mjs';
 import { newKeeperKey, signReading } from '../src/signed-price.mjs';
@@ -74,6 +75,31 @@ test('refuses to run without the registry of counted transfers', () => {
   const { usedRefs, ...rest } = opts();
   assert.throws(() => checkPayment(tx(), rest), /usedRefs/);
 });
+
+// A real Solana devnet transfer of 5 test USDC, lender to borrower, memo trove-L1 (2026-10-28).
+const REAL = JSON.parse(readFileSync(new URL('./fixtures/devnet-usdc-pay.json', import.meta.url)));
+const REAL_SIG = REAL.transaction.signatures[0];
+const real = (o = {}) => checkPayment(REAL, { signature: REAL_SIG, mint: MINT, senderOwner: LENDER, recipientOwner: BORROWER, loanId: 'trove-L1', minAmount: 5_000_000n, usedRefs: new Set(), ...o });
+
+test('a real devnet transfer counts as loanPaid', () => {
+  const r = real();
+  assert.equal(r.ok, true);
+  assert.equal(r.event.amount, 5_000_000n);
+  assert.equal(r.event.ref, REAL_SIG);
+});
+
+for (const [name, o, why] of [
+  ['another loan id', { loanId: 'trove-L2' }, /loan id as a memo/],
+  ['one unit short', { minAmount: 5_000_001n }, /below the amount owed/],
+  ['the borrower named as payer', { senderOwner: BORROWER, recipientOwner: LENDER }, /received nothing/],
+  ['already counted', { usedRefs: new Set([REAL_SIG]) }, /already counted/],
+]) {
+  test(`the real devnet transfer is refused for ${name}`, () => {
+    const r = real(o);
+    assert.equal(r.ok, false);
+    assert.match(r.reason, why);
+  });
+}
 
 test('a checked transfer drives the loan to active, then repaid', () => {
   const key = newKeeperKey();
