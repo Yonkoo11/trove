@@ -13,12 +13,20 @@ const T0 = 1_000_000;
 
 // Shaped like getTransaction(jsonParsed): token balances before and after, per owner and mint.
 const bal = (accountIndex, owner, amount, mint = MINT) => ({ accountIndex, mint, owner, uiTokenAmount: { amount: String(amount), decimals: 6 } });
-const tx = ({ from = LENDER, to = BORROWER, amount = 200_000_000, toBefore = 0, at = T0 + 95, err = null, mint = MINT } = {}) => ({
+const STRANGER = '9xStrangerWallet1111111111111111111111111111';
+// accountKeys and the spl-memo instruction are shaped like jsonParsed output too.
+const tx = ({ from = LENDER, to = BORROWER, amount = 200_000_000, toBefore = 0, at = T0 + 95, err = null, mint = MINT, signer = from, memo = 'L1' } = {}) => ({
   blockTime: at, slot: 1,
   meta: { err, preTokenBalances: [bal(1, from, 500_000_000, mint), bal(2, to, toBefore, mint)], postTokenBalances: [bal(1, from, 500_000_000 - amount, mint), bal(2, to, toBefore + amount, mint)] },
-  transaction: { signatures: [SIG] },
+  transaction: {
+    signatures: [SIG],
+    message: {
+      accountKeys: [{ pubkey: signer, signer: true, writable: true }, { pubkey: to, signer: false, writable: true }],
+      instructions: memo === null ? [] : [{ program: 'spl-memo', parsed: memo }],
+    },
+  },
 });
-const opts = (o = {}) => ({ signature: SIG, mint: MINT, recipientOwner: BORROWER, minAmount: 200_000_000n, notBefore: T0, notAfter: T0 + 3600, ...o });
+const opts = (o = {}) => ({ signature: SIG, mint: MINT, senderOwner: LENDER, recipientOwner: BORROWER, loanId: 'L1', minAmount: 200_000_000n, notBefore: T0, notAfter: T0 + 3600, usedRefs: new Set(), ...o });
 
 test('a full transfer to the borrower becomes a loanPaid event', () => {
   const r = checkPayment(tx(), opts());
@@ -43,6 +51,12 @@ for (const [name, t, o, why] of [
   ['signature mismatch', tx(), { signature: 'other' }, /does not match/],
   ['reused transfer', tx(), { usedRefs: new Set([SIG]) }, /already counted/],
   ['unknown type', tx(), { type: 'gift' }, /unknown event type/],
+  ['a stranger paid the borrower', tx({ from: STRANGER }), {}, /did not sign/],
+  ['lender signed but a stranger\'s tokens moved', tx({ from: STRANGER, signer: LENDER }), {}, /did not come from the expected sender/],
+  ['no memo', tx({ memo: null }), {}, /loan id as a memo/],
+  ['memo for another loan', tx({ memo: 'L2' }), {}, /loan id as a memo/],
+  ['sender pays itself', tx(), { recipientOwner: LENDER }, /two different wallets/],
+  ['no loan id', tx(), { loanId: '' }, /loan id is required/],
 ]) {
   test(`refuses: ${name}`, () => {
     const r = checkPayment(t, opts(o));
@@ -54,6 +68,11 @@ for (const [name, t, o, why] of [
 test('refuses a transaction with no block time', () => {
   const t = tx(); delete t.blockTime;
   assert.match(checkPayment(t, opts()).reason, /no block time/);
+});
+
+test('refuses to run without the registry of counted transfers', () => {
+  const { usedRefs, ...rest } = opts();
+  assert.throws(() => checkPayment(tx(), rest), /usedRefs/);
 });
 
 test('a checked transfer drives the loan to active, then repaid', () => {
@@ -69,8 +88,10 @@ test('a checked transfer drives the loan to active, then repaid', () => {
   assert.equal(loan.state, 'active');
   assert.equal(loan.payRef, SIG);
 
-  const back = checkPayment({ ...tx({ from: BORROWER, to: LENDER, amount: 210_000_000, at: T0 + 86400 }), transaction: { signatures: ['5back'] } },
-    { type: 'repaid', signature: '5back', mint: MINT, recipientOwner: LENDER, minAmount: 0n, notBefore: loan.activeAt, usedRefs: new Set([loan.payRef]) });
+  const repay = tx({ from: BORROWER, to: LENDER, amount: 210_000_000, at: T0 + 86400 });
+  repay.transaction.signatures = ['5back'];
+  const back = checkPayment(repay,
+    { type: 'repaid', signature: '5back', mint: MINT, senderOwner: BORROWER, recipientOwner: LENDER, loanId: 'L1', minAmount: 0n, notBefore: loan.activeAt, usedRefs: new Set([loan.payRef]) });
   assert.equal(back.ok, true);
   const r = step(loan, back.event);
   assert.equal(r.loan.repayRef, '5back');
