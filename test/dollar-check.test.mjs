@@ -136,3 +136,13 @@ test('a checked transfer drives the loan to active, then repaid', () => {
   assert.equal(r.loan.repayRef, '5back');
   assert.notEqual(r.loan.state, 'active');
 });
+
+test('a time window given as a whole-second bigint is honoured (the command-line checker passes BigInt)', () => {
+  const tx = JSON.parse(readFileSync(new URL('./fixtures/devnet-usdc-pay-ref.json', import.meta.url), 'utf8'));
+  const base = { type: 'loanPaid', signature: tx.transaction.signatures[0], mint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
+    senderOwner: 'FMbu8WyM9RrFYDBqSLHDZZjWHit4dfzCeseXx22AWQx4', recipientOwner: '8A8mfYzzFY4xgpE32FoM7TpVY7SCShejHWMp6g9yowo5',
+    loanId: '559feecb68886bea', minAmount: 500_000n };
+  assert.equal(checkPayment(tx, { ...base, notBefore: 1793187000n, notAfter: 1793188000n, usedRefs: new Set() }).ok, true);
+  assert.equal(checkPayment(tx, { ...base, notBefore: 1793188000n, usedRefs: new Set() }).reason, 'transfer is older than the loan');
+  assert.equal(checkPayment(tx, { ...base, notBefore: '1793187000', usedRefs: new Set() }).reason, 'loan time window must be whole seconds');
+});

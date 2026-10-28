@@ -21,7 +21,7 @@ if (args.save && body.result) writeFileSync(args.save, JSON.stringify(body.resul
 
 const r = checkPayment(body.result, {
   type: args.type ?? 'loanPaid', signature: args.sig, mint: args.mint ?? USDC_DEVNET, senderOwner: args.from, recipientOwner: args.to,
-  loanId: args.loan, minAmount: BigInt(args.min), notBefore: args.after, notAfter: args.before, usedRefs: new Set(),
+  loanId: args.loan, minAmount: BigInt(args.min), notBefore: args.after === undefined ? undefined : BigInt(args.after), notAfter: args.before === undefined ? undefined : BigInt(args.before), usedRefs: new Set(),
 });
 console.log(r.ok ? `counts: ${r.event.type}, ${r.event.amount} base units at ${r.event.at}` : `refused: ${r.reason}`);
 process.exit(r.ok ? 0 : 1);

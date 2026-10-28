@@ -405,7 +405,7 @@ function lockScreen(code) {
     'This vault is on Zcash testnet. Use a testnet wallet and test ZEC; a mainnet wallet will refuse the address.',
     `Send the full ${zec} ZEC in one payment, within ${r.terms.fundWindow / 60} minutes. The rules do not open a loan on a short or late deposit.`,
     'Getting a short or late deposit back needs two key holders to sign it to an address you give them. This page does not ask for one yet.',
-    'This page cannot see your deposit: the payment is shielded and the site has no server. Your wallet shows when it confirms.',
+    'This page cannot see your deposit: the site has no server. Pay from a shielded balance so the amount stays hidden; a transparent address shows it on the way in. Your wallet shows when it confirms.',
     'One vault serves every test loan, so its three key holders can see each deposit and when it arrived.',
   ];
   return h('section', { class: 'screen' }, back,
