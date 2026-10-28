@@ -30,7 +30,7 @@ export function debtAt(loan, at) {
 
 const need = (loan, ...states) => { if (!states.includes(loan.state)) fail(`cannot do this in state ${loan.state}`); };
 // Stray deposits are handled only while the loan never took collateral (no vaultZat), so the vault total is not double counted.
-const needStray = (loan) => { if (loan.vaultZat !== undefined || !['proposed', 'expired', 'aborted'].includes(loan.state)) fail(`cannot do this in state ${loan.state}`); };
+const needStray = (loan) => { if (loan.vaultZat !== undefined || !['proposed', 'expired', 'aborted', 'closed_aborted'].includes(loan.state)) fail(`cannot do this in state ${loan.state}`); };
 const mark = (loan, state, ev, extra = {}) => ({ ...loan, ...extra, state, history: [...loan.history, { state, at: BigInt(ev.at), ev: ev.type }] });
 
 /** A reading counts only if the keeper signed it for THIS loan, it is fresh, and it is newer than any reading used before. */
@@ -76,7 +76,7 @@ export function keeperMayCosignDefault(loan, reading, at) {
   const price = checkReading(loan, reading, at);
   const declaredAt = loan.history.at(-1).at;
   if (BigInt(reading.ts) < declaredAt) fail('the keeper reading must be taken after the default was declared');
-  if (loan.defaultReason === 'price' && ltvBps(debtAt(loan, at), loan.terms.collateralZat, price) < loan.terms.liqLtvBps) {
+  if (loan.defaultReason === 'price' && ltvBps(debtAt(loan, at), loan.vaultZat ?? loan.terms.collateralZat, price) < loan.terms.liqLtvBps) {
     fail('a newer price shows the loan back under the liquidation line, keeper must not co-sign');
   }
   return settleDefault(loan, declaredAt, price);
@@ -108,7 +108,7 @@ const handlers = {
     if (!dep) fail(`no recorded deposit ${ev.txid} to refund`);
     if (dep.refunded) fail(`deposit ${ev.txid} was already refunded`);
     const deposits = loan.deposits.map((d) => (d.txid === ev.txid ? { ...d, refunded: true } : d));
-    const next = loan.state === 'aborted' ? { ...loan, deposits } : mark(loan, 'aborted', ev, { deposits, refundZat: dep.zat, lockTx: dep.txid });
+    const next = ['aborted', 'closed_aborted'].includes(loan.state) ? { ...loan, deposits } : mark(loan, 'aborted', ev, { deposits, refundZat: dep.zat, lockTx: dep.txid });
     return { loan: next, effects: [release('borrower', ['borrower', 'keeper'], { zat: dep.zat })] };
   },
   loanPaid(loan, ev) {
@@ -131,7 +131,8 @@ const handlers = {
   price(loan, ev) {
     need(loan, 'active');
     const price = checkReading(loan, ev.reading, ev.at);
-    const ltv = ltvBps(debtAt(loan, ev.at), loan.terms.collateralZat, price);
+    // LTV is measured on what the vault holds, the same amount a default pays out of.
+    const ltv = ltvBps(debtAt(loan, ev.at), loan.vaultZat ?? loan.terms.collateralZat, price);
     if (ltv < loan.terms.liqLtvBps) return { loan: { ...loan, lastPriceTs: BigInt(ev.reading.ts) }, effects: [{ type: 'ok', ltvBps: ltv }] };
     return declareDefault(loan, ev, 'price', price);
   },
